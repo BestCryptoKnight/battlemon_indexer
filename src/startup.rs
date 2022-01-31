@@ -1,6 +1,7 @@
 use crate::config::{get_config, InitSettings, RunSettings};
 use crate::listen_blocks;
 use near_indexer::{indexer_init_configs, Indexer};
+use sqlx::Connection;
 use std::path::PathBuf;
 use uuid::Uuid;
 
@@ -26,15 +27,22 @@ pub fn run_indexer(home_dir: PathBuf) -> crate::Result<()> {
     let mut config = get_config::<RunSettings>().expect("Couldn't run indexer");
     tracing::info!("Config was loaded");
     config.indexer.home_dir = home_dir;
-    // let db_config = get_configuration();
-    // let address = format!("127.0.0.1:{}", db_config.)
     let system = actix::System::new();
-    tracing::info!("Indexer was created and configured");
     system.block_on(async move {
+        tracing::info!("get connection config for database");
+        let address = config.database.connection_string();
+        tracing::info!("Using postgres database at: {}", &address);
+        let conn = sqlx::PgConnection::connect(&address)
+            .await
+            .expect("Failed to connect to Postgres");
+        let conn = actix_web::web::Data::new(conn);
+
+        tracing::info!("Create indexer with configuration: {:?}", config.indexer);
         let indexer = Indexer::new(config.indexer);
         let stream = indexer.streamer();
-        actix::spawn(async {
-            if let Err(e) = listen_blocks(stream).await {
+
+        actix::spawn(async move {
+            if let Err(e) = listen_blocks(stream, conn.clone()).await {
                 tracing::error!("`listen_blocks` is terminated with error: {:#}", e)
             }
         });

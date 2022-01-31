@@ -21,7 +21,7 @@ DB_NAME="${POSTGRES_DB:=indexer_db}"
 DB_PORT="${POSTGRES_PORT:=5432}"
 
 if [[ -z "${SKIP_DOCKER}" ]]; then
-  docker run \
+  sudo docker run \
     --env POSTGRES_USER=${DB_USER} \
     --env POSTGRES_PASSWORD=${DB_PASSWORD} \
     --env POSTGRES_DB=${DB_NAME} \

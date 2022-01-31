@@ -1,8 +1,10 @@
 use crate::consts::get_main_acc;
+use actix_web::web;
+use futures::try_join;
 use futures::StreamExt;
-use futures::{join, try_join};
 use near_indexer::near_primitives::types::ShardId;
 use near_indexer::{IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage};
+use sqlx::PgConnection;
 use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tokio::time;
@@ -16,7 +18,10 @@ pub mod consts;
 pub mod startup;
 pub mod telemetry;
 
-pub async fn listen_blocks(stream: Receiver<StreamerMessage>) -> Result<()> {
+pub async fn listen_blocks(
+    stream: Receiver<StreamerMessage>,
+    db_conn: web::Data<PgConnection>,
+) -> Result<()> {
     // handler
     let mut handle_messages = ReceiverStream::new(stream)
         .map(|streamer_message| {
@@ -28,7 +33,7 @@ pub async fn listen_blocks(stream: Receiver<StreamerMessage>) -> Result<()> {
     while let Some(_handled_message) = handle_messages.next().await {}
 
     // Graceful shutdown
-    // info!("Indexer will be shutdown gracefully in 7 seconds...");
+    tracing::info!("Indexer will be shutdown gracefully in 7 seconds...");
     drop(handle_messages);
     time::sleep(Duration::from_secs(7)).await;
 

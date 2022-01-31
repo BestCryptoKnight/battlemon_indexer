@@ -1,3 +1,4 @@
+use crate::consts::get_main_acc;
 use futures::StreamExt;
 use futures::{join, try_join};
 use near_indexer::near_primitives::types::ShardId;
@@ -10,10 +11,18 @@ use tokio_stream::wrappers::ReceiverStream;
 pub type GenericError = Box<dyn std::error::Error + Sync + Send>;
 pub type Result<T> = std::result::Result<T, GenericError>;
 
+pub mod config;
+pub mod consts;
+pub mod startup;
+pub mod telemetry;
+
 pub async fn listen_blocks(stream: Receiver<StreamerMessage>) -> Result<()> {
     // handler
     let mut handle_messages = ReceiverStream::new(stream)
-        .map(|streamer_message| handle_message(streamer_message))
+        .map(|streamer_message| {
+            tracing::info!("Block height: {:?}", streamer_message.block.header.height);
+            handle_message(streamer_message)
+        })
         .buffer_unordered(1);
 
     while let Some(_handled_message) = handle_messages.next().await {}
@@ -42,7 +51,12 @@ async fn handle_message(streamer_message: StreamerMessage) -> Result<()> {
 
 async fn collect_and_store_nft_events(shard: &IndexerShard, block_timestamp: &u64) -> Result<()> {
     let mut index_in_shard: i32 = 0;
+    let main_acc = get_main_acc().await;
     for outcome in &shard.receipt_execution_outcomes {
+        if !outcome.receipt.receiver_id.is_sub_account_of(main_acc) {
+            continue;
+        }
+
         let nft_events = collect_nft_events(
             outcome,
             block_timestamp,
@@ -61,18 +75,25 @@ fn collect_nft_events(
     index_in_shard: &mut i32,
     // ) -> Vec<models::assets::non_fungible_token_events::NonFungibleTokenEvent> {
 ) -> Result<()> {
-    // let prefix = "EVENT_JSON:";
-    // let event_logs = outcome.execution_outcome.outcome.logs.iter().filter_map(|untrimmed_log| {
-    //     // Now we have only nep171 events, we both parse the logs and handle nep171 here.
-    //     // When other event types will be added, we need to rewrite the logic
-    //     // so that we parse the logs only once for all,
-    //     // and then handle them for each event type separately.
-    //     let log = untrimmed_log.trim();
-    //     if !log.starts_with(prefix) {
-    //         return None;
-    //     }
-    let logs = outcome.clone().execution_outcome.outcome.logs;
-    println!("{:?}", logs);
+    let prefix = "EVENT_JSON:";
+
+    let event_logs = outcome
+        .execution_outcome
+        .outcome
+        .logs
+        .iter()
+        .filter_map(|untrimmed_log| {
+            // Now we have only nep171 events, we both parse the logs and handle nep171 here.
+            // When other event types will be added, we need to rewrite the logic
+            // so that we parse the logs only once for all,
+            // and then handle them for each event type separately.
+            let log = untrimmed_log.trim();
+            if !log.starts_with(prefix) {
+                return None;
+            }
+            Some(log)
+        });
+
     Ok(())
 }
 

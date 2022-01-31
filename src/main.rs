@@ -3,7 +3,6 @@ use indexer::{startup, telemetry, Result};
 fn main() -> Result<()> {
     let subscriber = telemetry::get_subscriber("indexer".into(), "info".into());
     telemetry::init_subscriber(subscriber);
-
     let args: Vec<String> = std::env::args().collect();
     let command = args
         .get(1)

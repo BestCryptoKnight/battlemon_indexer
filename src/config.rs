@@ -8,7 +8,6 @@ pub struct RunSettings {
     pub database: DatabaseSettings,
     #[serde(with = "IndexerConfigDef")]
     pub indexer: IndexerConfig,
-    pub app_port: u16,
 }
 
 #[derive(Deserialize, Debug)]
@@ -67,6 +66,15 @@ pub struct DatabaseSettings {
     pub port: u16,
     pub host: String,
     pub db_name: String,
+}
+
+impl DatabaseSettings {
+    pub fn connection_string(&self) -> String {
+        format!(
+            "postgres://{}:{}@{}:{}/{}",
+            self.username, self.password, self.host, self.port, self.db_name
+        )
+    }
 }
 
 #[tracing::instrument(

@@ -1,0 +1,17 @@
+{
+  "db": "PostgreSQL",
+  "c01d602f8a23bcbca59b98861a0a0941cb4309b2a18acbb93002db61cdd7752a": {
+    "query": "\n        INSERT INTO sales (id, log, date)\n        VALUES ($1, $2, $3)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Timestamptz"
+        ]
+      },
+      "nullable": []
+    }
+  }
+}

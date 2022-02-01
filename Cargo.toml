@@ -22,4 +22,4 @@ sqlx = { version = "0.5.5", default-features = false, features = ["runtime-actix
 uuid = { version = "0.8.1", features = ["v4", "serde"] }
 chrono = "0.4.19"
 
-near-indexer = { git = "https://github.com/near/nearcore", rev = "fdd3cffeab68299a7737ce60ac50a1ecd268f6ad" }
+near-indexer = { git = "https://github.com/near/nearcore", rev = "6c5199f3b8b72ea8065e25cdd0bd3661ef95f878" }

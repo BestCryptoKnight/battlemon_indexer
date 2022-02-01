@@ -1,7 +1,6 @@
 use crate::config::{get_config, InitSettings, RunSettings};
 use crate::listen_blocks;
 use near_indexer::{indexer_init_configs, Indexer};
-use sqlx::Connection;
 use std::path::PathBuf;
 use uuid::Uuid;
 
@@ -32,7 +31,7 @@ pub fn run_indexer(home_dir: PathBuf) -> crate::Result<()> {
         tracing::info!("get connection config for database");
         let address = config.database.connection_string();
         tracing::info!("Using postgres database at: {}", &address);
-        let conn = sqlx::PgConnection::connect(&address)
+        let conn = sqlx::PgPool::connect(&address)
             .await
             .expect("Failed to connect to Postgres");
         let conn = actix_web::web::Data::new(conn);

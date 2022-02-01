@@ -20,5 +20,6 @@ tracing-log = "0.1.2"
 config = { version = "0.11.0", default-features = false, features = ["yaml"] }
 sqlx = { version = "0.5.5", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline"] }
 uuid = { version = "0.8.1", features = ["v4", "serde"] }
+chrono = "0.4.19"
 
 near-indexer = { git = "https://github.com/near/nearcore", rev = "fdd3cffeab68299a7737ce60ac50a1ecd268f6ad" }

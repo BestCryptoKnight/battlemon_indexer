@@ -16,13 +16,13 @@ RUN cargo build --release --bin indexer
 FROM debian:bullseye-slim AS runtime
 WORKDIR /app
 RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends openssl \
+    && apt-get install -y --no-install-recommends openssl jq \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/indexer /app/config.yaml ./
+COPY --from=builder /app/target/release/indexer /app/config.yaml /app/scripts/entry_point.sh ./
 ENV NEAR_HOME=/near
 RUN ./indexer init \
      && sed -i 's/"tracked_shards": \[\]/"tracked_shards": [0]/' /near/config.json
-#ENTRYPOINT ["./indexer"]
+ENTRYPOINT ["./entry_point.sh"]

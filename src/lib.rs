@@ -1,32 +1,32 @@
 use crate::consts::get_main_acc;
 use actix_web::web;
+use chrono::Utc;
 use futures::try_join;
 use futures::StreamExt;
 use near_indexer::near_primitives::types::ShardId;
 use near_indexer::{IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage};
-use sqlx::PgConnection;
+use sqlx::PgPool;
 use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tokio::time;
 use tokio_stream::wrappers::ReceiverStream;
+use uuid::Uuid;
 
 pub type GenericError = Box<dyn std::error::Error + Sync + Send>;
 pub type Result<T> = std::result::Result<T, GenericError>;
 
 pub mod config;
 pub mod consts;
+pub mod models;
 pub mod startup;
 pub mod telemetry;
 
-pub async fn listen_blocks(
-    stream: Receiver<StreamerMessage>,
-    db_conn: web::Data<PgConnection>,
-) -> Result<()> {
+pub async fn listen_blocks(stream: Receiver<StreamerMessage>, db: web::Data<PgPool>) -> Result<()> {
     // handler
     let mut handle_messages = ReceiverStream::new(stream)
         .map(|streamer_message| {
             tracing::info!("Block height: {:?}", streamer_message.block.header.height);
-            handle_message(streamer_message)
+            handle_message(streamer_message, db.clone())
         })
         .buffer_unordered(1);
 
@@ -40,10 +40,15 @@ pub async fn listen_blocks(
     Ok(())
 }
 
-async fn handle_message(streamer_message: StreamerMessage) -> Result<()> {
+async fn handle_message(streamer_message: StreamerMessage, db: web::Data<PgPool>) -> Result<()> {
     let nft_events = async {
         for shard in &streamer_message.shards {
-            collect_and_store_nft_events(shard, &streamer_message.block.header.timestamp).await?;
+            collect_and_store_nft_events(
+                shard,
+                &streamer_message.block.header.timestamp,
+                db.clone(),
+            )
+            .await?;
         }
 
         Ok::<(), GenericError>(())
@@ -54,7 +59,15 @@ async fn handle_message(streamer_message: StreamerMessage) -> Result<()> {
     Ok(())
 }
 
-async fn collect_and_store_nft_events(shard: &IndexerShard, block_timestamp: &u64) -> Result<()> {
+// #[tracing::instrument(
+//     name = "Collecting nft events and store it in database",
+//     skip(shard, block_timestamp, db)
+// )]
+async fn collect_and_store_nft_events(
+    shard: &IndexerShard,
+    block_timestamp: &u64,
+    db: web::Data<PgPool>,
+) -> Result<()> {
     let mut index_in_shard: i32 = 0;
     let main_acc = get_main_acc().await;
     for outcome in &shard.receipt_execution_outcomes {
@@ -68,7 +81,51 @@ async fn collect_and_store_nft_events(shard: &IndexerShard, block_timestamp: &u6
             &shard.shard_id,
             &mut index_in_shard,
         );
+
+        // let to = "";
+        // let token_id = "";
+        // let price = "10.5";
+        if let Some(log) = nft_events.get(0) {
+            tracing::info!("collected log: {:?}", log);
+            insert_nft_events(log.clone(), &db).await?
+        }
+
+        // sqlx::query!(
+        //     r#"
+        //     INSERT INTO sales (id, from, to, token_id, price, date)
+        //     VALUES ($1, $2, $3, $4, $5, $6)
+        //     "#,
+        //     Uuid::new_v4(),
+        //     from,
+        //     to,
+        //     token_id,
+        //     price,
+        //     Utc::now(),
+        // )
+        // .execute(db.get_ref())
+        // .await
     }
+
+    Ok(())
+}
+
+#[tracing::instrument(name = "Saving new log in the database", skip(log, db))]
+pub async fn insert_nft_events(log: String, db: &PgPool) -> Result<()> {
+    sqlx::query!(
+        r#"
+        INSERT INTO sales (id, log, date)
+        VALUES ($1, $2, $3)
+        "#,
+        Uuid::new_v4(),
+        log,
+        Utc::now()
+    )
+    .execute(db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
 
     Ok(())
 }
@@ -78,8 +135,7 @@ fn collect_nft_events(
     block_timestamp: &u64,
     shard_id: &ShardId,
     index_in_shard: &mut i32,
-    // ) -> Vec<models::assets::non_fungible_token_events::NonFungibleTokenEvent> {
-) -> Result<()> {
+) -> Vec<String> {
     let prefix = "EVENT_JSON:";
 
     let event_logs = outcome
@@ -96,10 +152,11 @@ fn collect_nft_events(
             if !log.starts_with(prefix) {
                 return None;
             }
-            Some(log)
-        });
+            Some(log.into())
+        })
+        .collect();
 
-    Ok(())
+    event_logs
 }
 
 //         let event: nft_types::NearEvent = match serde_json::from_str::<'_, nft_types::NearEvent>(

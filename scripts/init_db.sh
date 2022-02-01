@@ -28,6 +28,7 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
     --network indexer-net \
     --publish "${DB_PORT}":5432 \
     --detach postgres \
+    --name db \
     postgres -N 1000
 fi
 

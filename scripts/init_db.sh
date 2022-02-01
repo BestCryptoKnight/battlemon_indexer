@@ -22,14 +22,15 @@ DB_PORT="${POSTGRES_PORT:=5432}"
 
 if [[ -z "${SKIP_DOCKER}" ]]; then
   sudo docker run \
+    --rm \
     --env POSTGRES_USER=${DB_USER} \
     --env POSTGRES_PASSWORD=${DB_PASSWORD} \
     --env POSTGRES_DB=${DB_NAME} \
     --network indexer-net \
     --publish "${DB_PORT}":5432 \
-    --detach postgres \
     --name db \
-    postgres -N 1000
+    --detach \
+    postgres postgres -N 1000
 fi
 
 export PGPASSWORD="$DB_PASSWORD"

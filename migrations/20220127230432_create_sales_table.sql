@@ -3,9 +3,8 @@ CREATE TABLE sales
 (
     id       uuid        NOT NULL,
     PRIMARY KEY (id),
-    "from"   TEXT        NOT NULL,
-    "to"     TEXT        NOT NULL,
+    prev     TEXT        NOT NULL,
+    curr     TEXT        NOT NULL,
     token_id TEXT        NOT NULL,
-    price    DECIMAL     NOT NULL,
     date     timestamptz NOT NULL
 );

@@ -1,4 +1,5 @@
-use crate::consts::get_main_acc;
+use std::time::Duration;
+
 use actix_web::web;
 use chrono::Utc;
 use futures::try_join;
@@ -6,11 +7,14 @@ use futures::StreamExt;
 use near_indexer::near_primitives::types::ShardId;
 use near_indexer::{IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage};
 use sqlx::PgPool;
-use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tokio::time;
 use tokio_stream::wrappers::ReceiverStream;
 use uuid::Uuid;
+
+use consts::get_main_acc;
+
+use crate::models::Event;
 
 pub type GenericError = Box<dyn std::error::Error + Sync + Send>;
 pub type Result<T> = std::result::Result<T, GenericError>;
@@ -25,7 +29,7 @@ pub async fn listen_blocks(stream: Receiver<StreamerMessage>, db: web::Data<PgPo
     // handler
     let mut handle_messages = ReceiverStream::new(stream)
         .map(|streamer_message| {
-            tracing::info!("Block height: {:?}", streamer_message.block.header.height);
+            // tracing::info!("Block height: {:?}", streamer_message.block.header.height);
             handle_message(streamer_message, db.clone())
         })
         .buffer_unordered(1);
@@ -71,9 +75,9 @@ async fn collect_and_store_nft_events(
     let mut index_in_shard: i32 = 0;
     let main_acc = get_main_acc().await;
     for outcome in &shard.receipt_execution_outcomes {
-        if !outcome.receipt.receiver_id.is_sub_account_of(main_acc) {
-            continue;
-        }
+        // if !outcome.receipt.receiver_id.is_sub_account_of(main_acc) {
+        //     continue;
+        // }
 
         let nft_events = collect_nft_events(
             outcome,
@@ -81,51 +85,41 @@ async fn collect_and_store_nft_events(
             &shard.shard_id,
             &mut index_in_shard,
         );
-
-        // let to = "";
-        // let token_id = "";
-        // let price = "10.5";
-        if let Some(log) = nft_events.get(0) {
-            tracing::info!("collected log: {:?}", log);
-            insert_nft_events(log.clone(), &db).await?
+        if !nft_events.is_empty() {
+            insert_nft_events(nft_events, &db).await?;
         }
-
-        // sqlx::query!(
-        //     r#"
-        //     INSERT INTO sales (id, from, to, token_id, price, date)
-        //     VALUES ($1, $2, $3, $4, $5, $6)
-        //     "#,
-        //     Uuid::new_v4(),
-        //     from,
-        //     to,
-        //     token_id,
-        //     price,
-        //     Utc::now(),
-        // )
-        // .execute(db.get_ref())
-        // .await
     }
 
     Ok(())
 }
 
-#[tracing::instrument(name = "Saving new log in the database", skip(log, db))]
-pub async fn insert_nft_events(log: String, db: &PgPool) -> Result<()> {
-    sqlx::query!(
-        r#"
-        INSERT INTO sales (id, log, date)
-        VALUES ($1, $2, $3)
-        "#,
-        Uuid::new_v4(),
-        log,
-        Utc::now()
-    )
-    .execute(db)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
+#[tracing::instrument(name = "Saving new event to the database", skip(events, db))]
+pub async fn insert_nft_events(events: Vec<Event>, db: &PgPool) -> Result<()> {
+    let mut tx = db.begin().await?;
+    for event in events {
+        let query = match event {
+            Event::Sale(sale) => {
+                sqlx::query!(
+                    r#"
+                    INSERT INTO sales (id, prev_owner, curr_owner, token_id, price, date)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    "#,
+                    Uuid::new_v4(),
+                    sale.prev_owner,
+                    sale.curr_owner,
+                    sale.token_id,
+                    sale.price,
+                    Utc::now()
+                )
+            }
+        };
+
+        query.execute(&mut tx).await.map_err(|e| {
+            tracing::error!("Failed to execute query: {:?}", e);
+            e
+        })?;
+    }
+    tx.commit().await?;
 
     Ok(())
 }
@@ -135,28 +129,22 @@ fn collect_nft_events(
     block_timestamp: &u64,
     shard_id: &ShardId,
     index_in_shard: &mut i32,
-) -> Vec<String> {
+) -> Vec<models::Event> {
     let prefix = "EVENT_JSON:";
 
-    let event_logs = outcome
+    outcome
         .execution_outcome
         .outcome
         .logs
         .iter()
-        .filter_map(|untrimmed_log| {
-            // Now we have only nep171 events, we both parse the logs and handle nep171 here.
-            // When other event types will be added, we need to rewrite the logic
-            // so that we parse the logs only once for all,
-            // and then handle them for each event type separately.
-            let log = untrimmed_log.trim();
-            if !log.starts_with(prefix) {
-                return None;
-            }
-            Some(log.into())
+        .filter_map(|log| log.trim().strip_prefix(prefix))
+        .filter_map(|v| {
+            serde_json::from_str(v).unwrap_or_else(|e| {
+                tracing::error!("Couldn't parse: {}", e);
+                None
+            })
         })
-        .collect();
-
-    event_logs
+        .collect()
 }
 
 //         let event: nft_types::NearEvent = match serde_json::from_str::<'_, nft_types::NearEvent>(

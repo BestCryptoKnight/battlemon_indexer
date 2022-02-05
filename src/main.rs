@@ -1,6 +1,7 @@
-use indexer::{startup, telemetry, Result};
+use battlemon_indexer::{startup, telemetry, Result};
 
 fn main() -> Result<()> {
+    openssl_probe::init_ssl_cert_env_vars();
     let subscriber = telemetry::get_subscriber("indexer".into(), "info".into());
     telemetry::init_subscriber(subscriber);
     let args: Vec<String> = std::env::args().collect();

@@ -1,10 +1,11 @@
 -- Add migration script here
 CREATE TABLE sales
 (
-    id       uuid        NOT NULL,
+    id         uuid        NOT NULL,
     PRIMARY KEY (id),
-    prev     TEXT        NOT NULL,
-    curr     TEXT        NOT NULL,
-    token_id TEXT        NOT NULL,
-    date     timestamptz NOT NULL
+    prev_owner TEXT        NOT NULL,
+    curr_owner TEXT        NOT NULL,
+    token_id   TEXT        NOT NULL,
+    price      TEXT        NOT NULL,
+    date       timestamptz NOT NULL
 );

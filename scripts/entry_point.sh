@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-./indexer run | jq
+./battlemon_indexer run | jq

@@ -1,12 +1,13 @@
 {
   "db": "PostgreSQL",
-  "004e70bb8e1940a1ee017ca71c2c8d8ca6a86b067da1c47f81655836e32ae26d": {
-    "query": "\n        INSERT INTO sales (id, prev, curr, token_id, date)\n        VALUES ($1, $2, $3, $4, $5)\n        ",
+  "92b020e6d736e4ba51e69942508351825a2872c6878f2eaf37d9776fa2a2bd82": {
+    "query": "\n                    INSERT INTO sales (id, prev_owner, curr_owner, token_id, price, date)\n                    VALUES ($1, $2, $3, $4, $5, $6)\n                    ",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
           "Uuid",
+          "Text",
           "Text",
           "Text",
           "Text",

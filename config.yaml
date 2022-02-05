@@ -7,20 +7,20 @@ database:
   db_name: "indexer_db"
 indexer:
   # run configs
-  sync_mode: "from_interruption"
+  sync_mode: "latest_synced"
   await_for_node_synced: "wait_for_full_sync"
   home_dir: "donotsetthisvalueitsbug"
 
   # init configs
-  chain_id: localnet
-  #  account_id: Option<String>,
-  #  test_seed: Option<String>,
+  chain_id: testnet
+#  account_id: null,
+#  test_seed: null,
   num_shards: 1
   fast: false
-  #  genesis: Option<String>,
-  download_genesis: false
-  #  download_genesis_url: Option<String>,
-  download_config: false
-  #  download_config_url: Option<String>,
-  #  boot_nodes: Option<String>,
-  #  max_gas_burnt_view: Option<Gas>,
+#  genesis: null,
+  download_genesis: true
+#  download_genesis_url: null,
+  download_config: true
+#  download_config_url: null,
+#  boot_nodes: null,
+#  max_gas_burnt_view: null,

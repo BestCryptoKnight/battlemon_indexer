@@ -1,2 +1,6 @@
 target
 .idea
+.git
+.gitignore
+.dockerignore
+Dockerfile

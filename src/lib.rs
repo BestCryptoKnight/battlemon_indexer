@@ -43,6 +43,7 @@ pub async fn listen_blocks(stream: Receiver<StreamerMessage>, db: web::Data<PgPo
     Ok(())
 }
 
+#[tracing::instrument(name = "Handling streamer message", skip(streamer_message, db))]
 async fn handle_message(streamer_message: StreamerMessage, db: web::Data<PgPool>) -> Result<()> {
     let nft_events = async {
         for shard in &streamer_message.shards {
@@ -62,10 +63,7 @@ async fn handle_message(streamer_message: StreamerMessage, db: web::Data<PgPool>
     Ok(())
 }
 
-// #[tracing::instrument(
-//     name = "Collecting nft events and store it in database",
-//     skip(shard, block_timestamp, db)
-// )]
+#[tracing::instrument(name = "Collecting nft events and store it in database", skip(db))]
 async fn collect_and_store_nft_events(
     shard: &IndexerShard,
     block_timestamp: &u64,

@@ -1,10 +1,12 @@
+use std::path::PathBuf;
+
 use near_indexer::{AwaitForNodeSyncedEnum, IndexerConfig, InitConfigArgs, SyncModeEnum};
 use serde::Deserialize;
-use std::path::PathBuf;
 use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct RunSettings {
+    pub main_account: String,
     pub database: DatabaseSettings,
     #[serde(with = "IndexerConfigDef")]
     pub indexer: IndexerConfig,

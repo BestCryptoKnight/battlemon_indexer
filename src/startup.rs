@@ -1,8 +1,10 @@
+use std::path::PathBuf;
+
+use near_indexer::{indexer_init_configs, Indexer};
+use uuid::Uuid;
+
 use crate::config::{get_config, InitSettings, RunSettings};
 use crate::listen_blocks;
-use near_indexer::{indexer_init_configs, Indexer};
-use std::path::PathBuf;
-use uuid::Uuid;
 
 #[tracing::instrument(
     name = "Initialize indexer",
@@ -28,7 +30,8 @@ pub fn run_indexer(home_dir: PathBuf) -> crate::Result<()> {
     config.indexer.home_dir = home_dir;
     let system = actix::System::new();
     system.block_on(async move {
-        tracing::info!("get connection config for database");
+        tracing::info!("Main account is {}", config.main_account);
+        tracing::info!("Get connection config for database");
         let address = config.database.connection_string();
         tracing::info!("Using postgres database at: {}", &address);
         let conn = sqlx::PgPool::connect(&address)
@@ -39,7 +42,6 @@ pub fn run_indexer(home_dir: PathBuf) -> crate::Result<()> {
         tracing::info!("Create indexer with configuration: {:?}", config.indexer);
         let indexer = Indexer::new(config.indexer);
         let stream = indexer.streamer();
-
         actix::spawn(async move {
             if let Err(e) = listen_blocks(stream, conn.clone()).await {
                 tracing::error!("`listen_blocks` is terminated with error: {:#}", e)

@@ -3,4 +3,3 @@ target
 .git
 .gitignore
 .dockerignore
-Dockerfile

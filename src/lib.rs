@@ -123,9 +123,9 @@ pub async fn insert_nft_events(events: Vec<Event>, db: &PgPool) -> Result<()> {
 
 fn collect_nft_events(
     outcome: &IndexerExecutionOutcomeWithReceipt,
-    block_timestamp: &u64,
-    shard_id: &ShardId,
-    index_in_shard: &mut i32,
+    _block_timestamp: &u64,
+    _shard_id: &ShardId,
+    _index_in_shard: &mut i32,
 ) -> Vec<models::Event> {
     let prefix = "EVENT_JSON:";
 

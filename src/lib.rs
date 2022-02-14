@@ -26,10 +26,9 @@ pub mod startup;
 pub mod telemetry;
 
 pub async fn listen_blocks(stream: Receiver<StreamerMessage>, db: web::Data<PgPool>) -> Result<()> {
-    // handler
     let mut handle_messages = ReceiverStream::new(stream)
         .map(|streamer_message| {
-            // tracing::info!("Block height: {:?}", streamer_message.block.header.height);
+            tracing::info!("Block height: {:?}", streamer_message.block.header.height);
             handle_message(streamer_message, db.clone())
         })
         .buffer_unordered(1);

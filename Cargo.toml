@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 actix = "=0.11.0-beta.2"
+itertools = "^0.10.3"
 actix-rt = "=2.2.0"  # remove it once actix is upgraded to 0.11+
 actix-web = "=4.0.0-beta.6"
 openssl-probe = { version = "0.1.4" }
@@ -22,4 +23,4 @@ sqlx = { version = "0.5.5", default-features = false, features = ["runtime-actix
 uuid = { version = "0.8.1", features = ["v4", "serde"] }
 chrono = "0.4.19"
 
-near-indexer = { git = "https://github.com/near/nearcore", rev = "6c5199f3b8b72ea8065e25cdd0bd3661ef95f878" }
+near-indexer = { git = "https://github.com/near/nearcore", rev = "539f254f793a3324a29e6e97e3b804b9fa4f27a2" }

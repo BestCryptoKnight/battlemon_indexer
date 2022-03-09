@@ -40,7 +40,7 @@ pub fn run_indexer(home_dir: PathBuf) -> crate::Result<()> {
         let conn = actix_web::web::Data::new(conn);
 
         tracing::info!("Create indexer with configuration: {:?}", config.indexer);
-        let indexer = Indexer::new(config.indexer);
+        let indexer = Indexer::new(config.indexer).expect("Couldn't create indexer");
         let stream = indexer.streamer();
         actix::spawn(async move {
             if let Err(e) = listen_blocks(stream, conn.clone()).await {

@@ -14,7 +14,3 @@ pub async fn get_main_acc() -> &'static AccountId {
         })
         .await
 }
-
-// if !outcome.receipt.receiver_id.is_sub_account_of(&main_acc) {
-//     return Ok(());
-// }

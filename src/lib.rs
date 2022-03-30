@@ -70,11 +70,11 @@ async fn collect_and_store_nft_events(
     db: web::Data<PgPool>,
 ) -> Result<()> {
     let mut index_in_shard: i32 = 0;
-    // let main_acc = get_main_acc().await;
+    let main_acc = get_main_acc().await;
     for outcome in &shard.receipt_execution_outcomes {
-        // if !outcome.receipt.receiver_id.is_sub_account_of(main_acc) {
-        //     continue;
-        // }
+        if !outcome.receipt.receiver_id.is_sub_account_of(main_acc) {
+            continue;
+        }
 
         let nft_events = collect_nft_events(
             outcome,

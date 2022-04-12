@@ -3,3 +3,6 @@ target
 .git
 .gitignore
 .dockerignore
+credentials
+.env
+sqlx-data.json

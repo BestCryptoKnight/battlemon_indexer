@@ -1,20 +1,24 @@
-use std::time::Duration;
-
 use actix_web::web;
 use chrono::Utc;
 use futures::try_join;
-use futures::StreamExt;
-use near_indexer::near_primitives::types::ShardId;
-use near_indexer::{IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage};
-use sqlx::PgPool;
-use tokio::sync::mpsc::Receiver;
-use tokio::time;
-use tokio_stream::wrappers::ReceiverStream;
+use near_lake_framework::near_indexer_primitives::types::ShardId;
+use near_lake_framework::near_indexer_primitives::views::{
+    ExecutionOutcomeView, ExecutionStatusView,
+};
+use near_lake_framework::near_indexer_primitives::{
+    IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage,
+};
+use serde_json::Value;
+use sqlx::postgres::PgArguments;
+use sqlx::query::Query;
+use sqlx::types::Json;
+use sqlx::{PgPool, Postgres};
+use token_metadata_ext::TokenExt;
 use uuid::Uuid;
 
-use consts::get_main_acc;
+use consts::get_contract_acc;
 
-use crate::models::Event;
+use crate::models::{ContractEventEnum, NftEvent, NftEventEnum, NftEventLogEnum};
 
 pub type GenericError = Box<dyn std::error::Error + Sync + Send>;
 pub type Result<T> = std::result::Result<T, GenericError>;
@@ -24,24 +28,6 @@ pub mod consts;
 pub mod models;
 pub mod startup;
 pub mod telemetry;
-
-pub async fn listen_blocks(stream: Receiver<StreamerMessage>, db: web::Data<PgPool>) -> Result<()> {
-    let mut handle_messages = ReceiverStream::new(stream)
-        .map(|streamer_message| {
-            tracing::info!("Block height: {:?}", streamer_message.block.header.height);
-            handle_message(streamer_message, db.clone())
-        })
-        .buffer_unordered(1);
-
-    while let Some(_handled_message) = handle_messages.next().await {}
-
-    // Graceful shutdown
-    tracing::info!("Indexer will be shutdown gracefully in 7 seconds...");
-    drop(handle_messages);
-    time::sleep(Duration::from_secs(7)).await;
-
-    Ok(())
-}
 
 #[tracing::instrument(name = "Handling streamer message", skip(streamer_message, db))]
 async fn handle_message(streamer_message: StreamerMessage, db: web::Data<PgPool>) -> Result<()> {
@@ -63,16 +49,19 @@ async fn handle_message(streamer_message: StreamerMessage, db: web::Data<PgPool>
     Ok(())
 }
 
-#[tracing::instrument(name = "Collecting nft events and store it in database", skip(db))]
+#[tracing::instrument(
+    name = "Collecting nft events and store it in database",
+    skip(shard, db)
+)]
 async fn collect_and_store_nft_events(
     shard: &IndexerShard,
     block_timestamp: &u64,
     db: web::Data<PgPool>,
 ) -> Result<()> {
     let mut index_in_shard: i32 = 0;
-    let main_acc = get_main_acc().await;
+    let contract_acc = get_contract_acc().await;
     for outcome in &shard.receipt_execution_outcomes {
-        if !outcome.receipt.receiver_id.is_sub_account_of(main_acc) {
+        if !outcome.receipt.receiver_id.is_sub_account_of(contract_acc) {
             continue;
         }
 
@@ -83,41 +72,115 @@ async fn collect_and_store_nft_events(
             &mut index_in_shard,
         );
         if !nft_events.is_empty() {
-            insert_nft_events(nft_events, &db).await?;
+            insert_nft_events(outcome, nft_events, &db).await?;
         }
     }
 
     Ok(())
 }
 
-#[tracing::instrument(name = "Saving new event to the database", skip(events, db))]
-pub async fn insert_nft_events(events: Vec<Event>, db: &PgPool) -> Result<()> {
-    let mut tx = db.begin().await?;
-    for event in events {
-        let query = match event {
-            Event::Sale(sale) => {
-                sqlx::query!(
-                    r#"
+#[tracing::instrument(
+    name = "Deserialize outcome result into nft model",
+    skip(outcome_result)
+)]
+pub fn deserialize_outcome_result(outcome_result: &ExecutionStatusView) -> Result<TokenExt> {
+    let token = match outcome_result {
+        ExecutionStatusView::SuccessValue(v) => {
+            let bytes = base64::decode(v)?;
+            serde_json::from_slice::<TokenExt>(bytes.as_slice())?
+        }
+        _ => unreachable!(),
+    };
+
+    Ok(token)
+}
+
+#[tracing::instrument(
+    name = "Building query for saving contract's event to db",
+    skip(event, outcome_result)
+)]
+pub async fn build_query<'a>(
+    event: ContractEventEnum,
+    outcome_result: &ExecutionStatusView,
+) -> Option<Query<'a, Postgres, PgArguments>> {
+    match event {
+        ContractEventEnum::NftEvent(NftEvent {
+            event: NftEventEnum::NftMint,
+            ..
+        }) => {
+            let TokenExt {
+                token_id,
+                owner_id,
+                model,
+                ..
+            } = deserialize_outcome_result(outcome_result)
+                .expect("Couldn't deserialize outcome result into nft token");
+
+            use serde::Deserialize;
+            #[derive(Deserialize)]
+            struct IpfsHash {
+                hash: String,
+            }
+
+            let json = reqwest::get("http://screener:8000/save_png?background=red&exo=ARM1_Exo_MA01&cap=ARM1_Cap_ZA01&cloth=ARM1_Cloth_MA01&eyes=ARM1_Eyes_Z01&head=ARM1_Head_Z01&teeth=ARM1_Teeth_A01")
+                .await
+                .expect("Couldn't get media from ipfs")
+                .json::<IpfsHash>()
+                .await
+                .expect("Couldn't parse json");
+
+            let q = sqlx::query!(
+                r#"
+                INSERT INTO nft_tokens (id, owner_id, token_id, media, model, db_created_at)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                "#,
+                Uuid::new_v4(),
+                owner_id.as_str(),
+                token_id,
+                json.hash,
+                Json(model) as _,
+                Utc::now()
+            );
+            Some(q)
+        }
+        ContractEventEnum::MarketSale(sale) => {
+            let q = sqlx::query!(
+                r#"
                     INSERT INTO sales (id, prev_owner, curr_owner, token_id, price, date)
                     VALUES ($1, $2, $3, $4, $5, $6)
                     "#,
-                    Uuid::new_v4(),
-                    sale.prev_owner,
-                    sale.curr_owner,
-                    sale.token_id,
-                    sale.price,
-                    Utc::now()
-                )
-            }
-        };
+                Uuid::new_v4(),
+                sale.prev_owner,
+                sale.curr_owner,
+                sale.token_id,
+                sale.price,
+                Utc::now()
+            );
+            Some(q)
+        }
+        _ => None,
+    }
+}
 
-        query.execute(&mut tx).await.map_err(|e| {
-            tracing::error!("Failed to execute query: {:?}", e);
-            e
-        })?;
+#[tracing::instrument(name = "Saving new event to the database", skip(outcome, events, db))]
+pub async fn insert_nft_events(
+    outcome: &IndexerExecutionOutcomeWithReceipt,
+    events: Vec<ContractEventEnum>,
+    db: &PgPool,
+) -> Result<()> {
+    let mut tx = db.begin().await?;
+    for event in events {
+        let outcome_result = &outcome.execution_outcome.outcome.status;
+
+        let query = build_query(event, outcome_result).await;
+        if let Some(query) = query {
+            query.execute(&mut tx).await.map_err(|e| {
+                tracing::error!("Failed to execute query: {:?}", e);
+                e
+            })?;
+        }
     }
     tx.commit().await?;
-
     Ok(())
 }
 
@@ -126,7 +189,7 @@ fn collect_nft_events(
     _block_timestamp: &u64,
     _shard_id: &ShardId,
     _index_in_shard: &mut i32,
-) -> Vec<models::Event> {
+) -> Vec<models::ContractEventEnum> {
     let prefix = "EVENT_JSON:";
 
     outcome

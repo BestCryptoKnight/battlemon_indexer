@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+actix-web = "4.0.1"
 serde = { version = "1.0.132", features = ["derive"] }
 serde_json = "1.0.73"
-tokio = { version = "1.15.0", features = ["sync"] }
+tokio = { version = "1.15.0", features = ["sync", "time", "macros", "rt-multi-thread"] }
 tokio-stream = "0.1.8"
 futures = "0.3.19"
 tracing = "0.1.29"
@@ -14,7 +15,10 @@ tracing-subscriber = { version = "0.3.7", features = ["registry", "env-filter"] 
 tracing-bunyan-formatter = "0.3.2"
 tracing-log = "0.1.2"
 config = { version = "0.11.0", default-features = false, features = ["yaml"] }
-sqlx = { version = "0.5.5", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline"] }
+sqlx = { version = "0.5.5", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline", "json"] }
 uuid = { version = "0.8.1", features = ["v4", "serde"] }
 chrono = "0.4.19"
 near-lake-framework = { git = "https://github.com/near/near-lake-framework" }
+base64 = "0.13.0"
+token_metadata_ext = { git = "https://github.com/battlemon-project/contracts", rev = "81653904b979fc1ca0fb59071c7c40c25766d382" }
+reqwest = { version = "0.11.10", features = ["json"] }

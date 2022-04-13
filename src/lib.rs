@@ -8,14 +8,15 @@ use near_lake_framework::near_indexer_primitives::views::{
 use near_lake_framework::near_indexer_primitives::{
     IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage,
 };
-use serde_json::Value;
+use nft_models::BuildQuery;
+
 use sqlx::postgres::PgArguments;
 use sqlx::query::Query;
 use sqlx::types::Json;
 use sqlx::{PgPool, Postgres};
 use token_metadata_ext::TokenExt;
 use uuid::Uuid;
-use nft_models::BuildQuery;
+
 use consts::get_contract_acc;
 
 use crate::models::{ContractEventEnum, NftEvent, NftEventEnum, NftEventLogEnum};

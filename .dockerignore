@@ -1,4 +1,3 @@
 target/
 docker/
 .env
-credentials

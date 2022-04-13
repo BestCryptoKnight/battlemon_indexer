@@ -1,7 +1,7 @@
 FROM lukemathwalker/cargo-chef:latest-rust-latest AS chef
 WORKDIR /app
 RUN apt-get update -y \
-    && apt-get install -y cmake pkg-config libssl-dev git clang
+        && apt-get install -y cmake pkg-config libssl-dev git clang
 
 FROM chef AS planner
 COPY . .
@@ -24,7 +24,8 @@ RUN apt-get update -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/battlemon_indexer /app/scripts/entry_point.sh ./
-COPY --from=builder /app/configs/testnet_config.yaml ./config.yaml
-ENV NEAR_HOME=/near
+COPY --from=builder /app/configs/local_config.yaml ./config.yaml
+
 RUN chmod +x entry_point.sh
+
 ENTRYPOINT ["./entry_point.sh"]

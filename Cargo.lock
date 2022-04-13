@@ -594,6 +594,7 @@ dependencies = [
  "config",
  "futures",
  "near-lake-framework",
+ "nft_models",
  "reqwest",
  "serde",
  "serde_json",
@@ -1659,7 +1660,7 @@ dependencies = [
 [[package]]
 name = "manager_derive_macro"
 version = "0.1.0"
-source = "git+https://github.com/battlemon-project/contracts?rev=81653904b979fc1ca0fb59071c7c40c25766d382#81653904b979fc1ca0fb59071c7c40c25766d382"
+source = "git+https://github.com/battlemon-project/contracts?rev=94d01397c41db5f23095b3df34550a7b81bc81ec#94d01397c41db5f23095b3df34550a7b81bc81ec"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2117,7 +2118,7 @@ dependencies = [
 [[package]]
 name = "nft_models"
 version = "0.1.0"
-source = "git+https://github.com/battlemon-project/contracts?rev=81653904b979fc1ca0fb59071c7c40c25766d382#81653904b979fc1ca0fb59071c7c40c25766d382"
+source = "git+https://github.com/battlemon-project/contracts?rev=94d01397c41db5f23095b3df34550a7b81bc81ec#94d01397c41db5f23095b3df34550a7b81bc81ec"
 dependencies = [
  "enum_dispatch",
  "manager_derive_macro",
@@ -3159,7 +3160,7 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 [[package]]
 name = "token_metadata_ext"
 version = "0.1.0"
-source = "git+https://github.com/battlemon-project/contracts?rev=81653904b979fc1ca0fb59071c7c40c25766d382#81653904b979fc1ca0fb59071c7c40c25766d382"
+source = "git+https://github.com/battlemon-project/contracts?rev=94d01397c41db5f23095b3df34550a7b81bc81ec#94d01397c41db5f23095b3df34550a7b81bc81ec"
 dependencies = [
  "near-contract-standards",
  "near-sdk",

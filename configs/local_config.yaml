@@ -1,6 +1,6 @@
 app_port: 8000
-contract_acc: "dev-20220410160044-29777971503416"
-block: 87209400
+contract_acc: "dev-20220412171353-95839448187434"
+block: 87371850
 database:
   host: db
   port: 5432

@@ -15,7 +15,7 @@ use sqlx::types::Json;
 use sqlx::{PgPool, Postgres};
 use token_metadata_ext::TokenExt;
 use uuid::Uuid;
-
+use nft_models::BuildQuery;
 use consts::get_contract_acc;
 
 use crate::models::{ContractEventEnum, NftEvent, NftEventEnum, NftEventLogEnum};
@@ -121,8 +121,8 @@ pub async fn build_query<'a>(
             struct IpfsHash {
                 hash: String,
             }
-
-            let json = reqwest::get("http://screener:8000/save_png?background=red&exo=ARM1_Exo_MA01&cap=ARM1_Cap_ZA01&cloth=ARM1_Cloth_MA01&eyes=ARM1_Eyes_Z01&head=ARM1_Head_Z01&teeth=ARM1_Teeth_A01")
+            let url = model.build_query();
+            let json = reqwest::get(url)
                 .await
                 .expect("Couldn't get media from ipfs")
                 .json::<IpfsHash>()

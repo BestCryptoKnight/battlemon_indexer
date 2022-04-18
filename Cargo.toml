@@ -7,7 +7,7 @@ edition = "2021"
 actix-web = "4.0.1"
 serde = { version = "1.0.132", features = ["derive"] }
 serde_json = "1.0.73"
-tokio = { version = "1.15.0", features = ["sync", "time", "macros", "rt-multi-thread"] }
+tokio = { version = "1.15.0", features = ["sync", "time", "macros", "rt-multi-thread", "process"] }
 tokio-stream = "0.1.8"
 futures = "0.3.19"
 tracing = "0.1.29"
@@ -20,6 +20,6 @@ uuid = { version = "0.8.1", features = ["v4", "serde"] }
 chrono = "0.4.19"
 near-lake-framework = { git = "https://github.com/near/near-lake-framework" }
 base64 = "0.13.0"
-token_metadata_ext = { git = "https://github.com/battlemon-project/contracts", rev = "94d01397c41db5f23095b3df34550a7b81bc81ec" }
-nft_models = { git = "https://github.com/battlemon-project/contracts", rev = "94d01397c41db5f23095b3df34550a7b81bc81ec" }
 reqwest = { version = "0.11.10", features = ["json"] }
+token_metadata_ext = { git = "https://github.com/battlemon-project/contracts" }
+nft_models = { git = "https://github.com/battlemon-project/contracts" }

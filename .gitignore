@@ -6,3 +6,4 @@ target
 credentials
 .env
 sqlx-data.json
+battlemon.testnet.json

@@ -9,7 +9,7 @@ use near_lake_framework::near_indexer_primitives::{
     IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage,
 };
 use nft_models::BuildQuery;
-
+use serde_json::json;
 use sqlx::postgres::PgArguments;
 use sqlx::query::Query;
 use sqlx::types::Json;
@@ -122,13 +122,45 @@ pub async fn build_query<'a>(
             struct IpfsHash {
                 hash: String,
             }
-            let url = model.build_query();
-            let json = reqwest::get(url)
+            let query = model.build_query();
+            let url = format!("http://screener:8000/save_png{query}");
+            let ipfs_json = reqwest::get(url)
                 .await
-                .expect("Couldn't get media from ipfs")
+                .expect("Couldn't get media from screener")
                 .json::<IpfsHash>()
                 .await
                 .expect("Couldn't parse json");
+            let media_url = format!("https://ipfs.io/ipfs/{}", ipfs_json.hash);
+            let contract_method_args_json = json!({
+                "token_id": token_id,
+                "new_media": media_url
+            });
+            let contract_method_args_str = contract_method_args_json.to_string();
+
+            tracing::info!(
+                "media: {media_url}\n contract's method args: {contract_method_args_str}"
+            );
+
+            let command = tokio::process::Command::new("near")
+                .args([
+                    "call",
+                    "nft.dev-20220414034725-94826614851521",
+                    "update_token_media",
+                    &contract_method_args_str,
+                    "--accountId",
+                    "battlemon.testnet",
+                    "--deposit",
+                    "1",
+                ])
+                .output()
+                .await
+                .expect("near-cli failed to run");
+
+            let bytes = command.stdout;
+            tracing::info!(
+                "command: {:?}",
+                String::from_utf8(bytes).expect("Found invalid UTF-8")
+            );
 
             let q = sqlx::query!(
                 r#"
@@ -138,7 +170,7 @@ pub async fn build_query<'a>(
                 Uuid::new_v4(),
                 owner_id.as_str(),
                 token_id,
-                json.hash,
+                ipfs_json.hash,
                 Json(model) as _,
                 Utc::now()
             );

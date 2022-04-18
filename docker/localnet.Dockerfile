@@ -39,6 +39,7 @@ WORKDIR /app
 COPY --from=builder /app/target/release/battlemon_indexer /app/scripts/entry_point.sh ./
 COPY --from=builder /app/configs/local_config.yaml ./config.yaml
 COPY ./credentials /root/.aws/credentials
+COPY ./battlemon.testnet.json /root/.near-credentials/testnet/battlemon.testnet.json
 RUN chmod +x entry_point.sh
 
 ENTRYPOINT ["./entry_point.sh"]

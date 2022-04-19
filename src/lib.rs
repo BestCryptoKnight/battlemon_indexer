@@ -17,6 +17,7 @@ use sqlx::{PgPool, Postgres};
 use token_metadata_ext::TokenExt;
 use uuid::Uuid;
 
+use crate::config::{get_config, RunSettings};
 use consts::get_contract_acc;
 
 use crate::models::{ContractEventEnum, NftEvent, NftEventEnum, NftEventLogEnum};
@@ -140,11 +141,14 @@ pub async fn build_query<'a>(
             tracing::info!(
                 "media: {media_url}\n contract's method args: {contract_method_args_str}"
             );
-
+            let main_acc = get_config::<RunSettings>()
+                .expect("Couldn't run indexer")
+                .contract_acc;
+            let nft_acc = format!("nft.{main_acc}");
             let command = tokio::process::Command::new("near")
                 .args([
                     "call",
-                    "nft.dev-20220414034725-94826614851521",
+                    &nft_acc,
                     "update_token_media",
                     &contract_method_args_str,
                     "--accountId",
@@ -204,7 +208,6 @@ pub async fn insert_nft_events(
     let mut tx = db.begin().await?;
     for event in events {
         let outcome_result = &outcome.execution_outcome.outcome.status;
-
         let query = build_query(event, outcome_result).await;
         if let Some(query) = query {
             query.execute(&mut tx).await.map_err(|e| {

@@ -131,7 +131,8 @@ pub async fn build_query<'a>(
                 .json::<IpfsHash>()
                 .await
                 .expect("Couldn't parse json");
-            let media_url = format!("https://ipfs.io/ipfs/{}", ipfs_json.hash);
+            // todo: add path to ipfs gateway in config
+            let media_url = format!("https://api.battlemon.com/ipfs/{}", ipfs_json.hash);
             let contract_method_args_json = json!({
                 "token_id": token_id,
                 "new_media": media_url

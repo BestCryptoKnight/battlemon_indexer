@@ -132,7 +132,7 @@ pub async fn build_query<'a>(
                 .await
                 .expect("Couldn't parse json");
             // todo: add path to ipfs gateway in config
-            let media_url = format!("https://api.battlemon.com/ipfs/{}", ipfs_json.hash);
+            let media_url = ipfs_json.hash.to_string();
             let contract_method_args_json = json!({
                 "token_id": token_id,
                 "new_media": media_url

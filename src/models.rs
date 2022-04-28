@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sqlx::types::Decimal;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -49,7 +50,7 @@ pub struct MarketSale {
     pub prev_owner: String,
     pub curr_owner: String,
     pub token_id: String,
-    pub price: String,
+    pub price: Decimal,
 }
 
 #[cfg(test)]

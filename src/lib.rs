@@ -184,9 +184,9 @@ pub async fn build_query<'a>(
         ContractEventEnum::MarketSale(sale) => {
             let q = sqlx::query!(
                 r#"
-                    INSERT INTO sales (id, prev_owner, curr_owner, token_id, price, date)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    "#,
+                INSERT INTO sales (id, prev_owner, curr_owner, token_id, price, date)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                "#,
                 Uuid::new_v4(),
                 sale.prev_owner,
                 sale.curr_owner,

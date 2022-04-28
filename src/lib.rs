@@ -166,11 +166,11 @@ pub async fn build_query<'a>(
                 "command: {:?}",
                 String::from_utf8(bytes).expect("Found invalid UTF-8")
             );
-
             let q = sqlx::query!(
                 r#"
                 INSERT INTO nft_tokens (id, owner_id, token_id, media, model, db_created_at)
                 VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (token_id) DO NOTHING
                 "#,
                 Uuid::new_v4(),
                 owner_id.as_str(),

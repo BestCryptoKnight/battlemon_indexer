@@ -1,9 +1,26 @@
 {
   "db": "PostgreSQL",
-  "4f80683e1e8c51871598763cdb2e1a16a2ecc92950fb90b8f9c8d67abad8373d": {
-    "query": "\n                INSERT INTO nft_tokens (id, owner_id, token_id, media, model, db_created_at)\n                VALUES ($1, $2, $3, $4, $5, $6)\n                ",
+  "a5d30a51ac62cdf9cb3334106222702997664645a50e5002b5510e7beaeedb99": {
     "describe": {
       "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text",
+          "Text",
+          "Numeric",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO sales (id, prev_owner, curr_owner, token_id, price, date)\n                VALUES ($1, $2, $3, $4, $5, $6)\n                "
+  },
+  "d8d53b05f0900ee1ab34ff49b67904f8ba884d18ccbe685b37aa9f8628aafd0d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Uuid",
@@ -13,25 +30,8 @@
           "Jsonb",
           "Timestamptz"
         ]
-      },
-      "nullable": []
-    }
-  },
-  "92b020e6d736e4ba51e69942508351825a2872c6878f2eaf37d9776fa2a2bd82": {
-    "query": "\n                    INSERT INTO sales (id, prev_owner, curr_owner, token_id, price, date)\n                    VALUES ($1, $2, $3, $4, $5, $6)\n                    ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Timestamptz"
-        ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n                INSERT INTO nft_tokens (id, owner_id, token_id, media, model, db_created_at)\n                VALUES ($1, $2, $3, $4, $5, $6)\n                ON CONFLICT (token_id) DO NOTHING\n                "
   }
 }

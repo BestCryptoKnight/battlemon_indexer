@@ -19,6 +19,9 @@ sqlx = { version = "0.5.5", default-features = false, features = ["runtime-actix
 uuid = { version = "0.8.1", features = ["v4", "serde"] }
 chrono = "0.4.19"
 near-lake-framework = { git = "https://github.com/near/near-lake-framework" }
+near-jsonrpc-client = { git = "https://github.com/near/near-jsonrpc-client-rs" }
+near-jsonrpc-primitives = "0.12.0"
+near-primitives = "0.12.0"
 base64 = "0.13.0"
 reqwest = { version = "0.11.10", features = ["json"] }
 token_metadata_ext = { git = "https://github.com/battlemon-project/contracts" }

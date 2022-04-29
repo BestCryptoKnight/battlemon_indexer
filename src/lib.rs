@@ -1,10 +1,10 @@
 use actix_web::web;
+use actix_web::web::Data;
 use chrono::Utc;
 use futures::try_join;
+use near_jsonrpc_client::JsonRpcClient;
 use near_lake_framework::near_indexer_primitives::types::ShardId;
-use near_lake_framework::near_indexer_primitives::views::{
-    ExecutionOutcomeView, ExecutionStatusView,
-};
+use near_lake_framework::near_indexer_primitives::views::ExecutionStatusView;
 use near_lake_framework::near_indexer_primitives::{
     IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage,
 };
@@ -32,13 +32,18 @@ pub mod startup;
 pub mod telemetry;
 
 #[tracing::instrument(name = "Handling streamer message", skip(streamer_message, db))]
-async fn handle_message(streamer_message: StreamerMessage, db: web::Data<PgPool>) -> Result<()> {
+async fn handle_message(
+    streamer_message: StreamerMessage,
+    db: web::Data<PgPool>,
+    rpc_client: web::Data<JsonRpcClient>,
+) -> Result<()> {
     let nft_events = async {
         for shard in &streamer_message.shards {
             collect_and_store_nft_events(
                 shard,
                 &streamer_message.block.header.timestamp,
                 db.clone(),
+                rpc_client.clone(),
             )
             .await?;
         }
@@ -59,6 +64,7 @@ async fn collect_and_store_nft_events(
     shard: &IndexerShard,
     block_timestamp: &u64,
     db: web::Data<PgPool>,
+    rpc_client: web::Data<JsonRpcClient>,
 ) -> Result<()> {
     let mut index_in_shard: i32 = 0;
     let contract_acc = get_contract_acc().await;
@@ -74,7 +80,7 @@ async fn collect_and_store_nft_events(
             &mut index_in_shard,
         );
         if !nft_events.is_empty() {
-            insert_nft_events(outcome, nft_events, &db).await?;
+            insert_nft_events(outcome, nft_events, &db, &rpc_client).await?;
         }
     }
 
@@ -104,6 +110,7 @@ pub fn deserialize_outcome_result(outcome_result: &ExecutionStatusView) -> Resul
 pub async fn build_query<'a>(
     event: ContractEventEnum,
     outcome_result: &ExecutionStatusView,
+    rpc_client: &JsonRpcClient,
 ) -> Option<Query<'a, Postgres, PgArguments>> {
     match event {
         ContractEventEnum::NftEvent(NftEvent {
@@ -205,11 +212,12 @@ pub async fn insert_nft_events(
     outcome: &IndexerExecutionOutcomeWithReceipt,
     events: Vec<ContractEventEnum>,
     db: &PgPool,
+    rpc_client: &JsonRpcClient,
 ) -> Result<()> {
     let mut tx = db.begin().await?;
     for event in events {
         let outcome_result = &outcome.execution_outcome.outcome.status;
-        let query = build_query(event, outcome_result).await;
+        let query = build_query(event, outcome_result, rpc_client).await;
         if let Some(query) = query {
             query.execute(&mut tx).await.map_err(|e| {
                 tracing::error!("Failed to execute query: {:?}", e);

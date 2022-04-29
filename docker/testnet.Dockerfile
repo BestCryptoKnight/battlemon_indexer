@@ -16,9 +16,6 @@ RUN apt-get update -y \
       clang \
       curl \
       gnupg \
-    && curl -sL https://deb.nodesource.com/setup_17.x  | bash - \
-    && apt-get -y install nodejs \
-    && npm install -g near-cli \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*

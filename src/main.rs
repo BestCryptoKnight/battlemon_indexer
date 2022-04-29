@@ -1,3 +1,4 @@
+use near_jsonrpc_client::{JsonRpcClient,  NEAR_TESTNET_ARCHIVAL_RPC_URL};
 use near_lake_framework::LakeConfig;
 use sqlx::postgres::PgPoolOptions;
 
@@ -21,7 +22,10 @@ async fn main() -> Result<()> {
         s3_region_name: "eu-central-1".to_string(),
         start_block_height: config.block,
     });
-    startup::run_indexer(stream, pool_conn)
+    // todo: add to config testnet or mainnet setting for rpc
+    let rpc_client = JsonRpcClient::connect(NEAR_TESTNET_ARCHIVAL_RPC_URL);
+
+    startup::run_indexer(stream, pool_conn, rpc_client)
         .await
         .expect("Couldn't run indexer");
     Ok(())

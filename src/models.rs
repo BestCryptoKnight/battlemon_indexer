@@ -53,6 +53,11 @@ pub struct MarketSale {
     pub price: Decimal,
 }
 
+#[derive(Deserialize)]
+pub struct IpfsHash {
+    pub hash: String,
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;

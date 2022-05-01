@@ -5,4 +5,5 @@ target
 .dockerignore
 credentials
 .env
-battlemon.testnet.json 
+battlemon.testnet.json
+.cargo

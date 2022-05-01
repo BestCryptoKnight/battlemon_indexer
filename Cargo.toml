@@ -18,6 +18,7 @@ config = { version = "0.11.0", default-features = false, features = ["yaml"] }
 sqlx = { version = "0.5.5", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline", "json", "decimal"] }
 uuid = { version = "0.8.1", features = ["v4", "serde"] }
 chrono = "0.4.19"
+near-crypto = "0.12.0"
 near-lake-framework = { git = "https://github.com/near/near-lake-framework" }
 battlemon_near_json_rpc_client_wrapper = { path = "../../battlemon_near_json_rpc_client_wrapper" }
 base64 = "0.13.0"

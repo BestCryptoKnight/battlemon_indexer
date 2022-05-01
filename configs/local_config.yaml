@@ -1,6 +1,6 @@
 app_port: 8000
 contract_acc: "dev-20220414034725-94826614851521"
-aws_settings:
+aws:
   s3_endpoint: null
   s3_bucket_name: "near-lake-data-testnet"
   s3_region_name: "eu-central-1"

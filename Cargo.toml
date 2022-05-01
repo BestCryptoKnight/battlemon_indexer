@@ -20,8 +20,8 @@ uuid = { version = "0.8.1", features = ["v4", "serde"] }
 chrono = "0.4.19"
 near-crypto = "0.12.0"
 near-lake-framework = { git = "https://github.com/near/near-lake-framework" }
-battlemon_near_json_rpc_client_wrapper = { path = "../../battlemon_near_json_rpc_client_wrapper" }
+battlemon_near_json_rpc_client_wrapper = { git = "https://github.com/battlemon-project/battlemon_near_json_rpc_client_wrapper" }
 base64 = "0.13.0"
 reqwest = { version = "0.11.10", features = ["json"] }
-token_metadata_ext = { path = "../../battlemon_contracts/token_metadata_ext" }
-nft_models = { path = "../../battlemon_contracts/nft_models" }
+token_metadata_ext = { git = "https://github.com/battlemon-project/contracts" }
+nft_models = { git = "https://github.com/battlemon-project/contracts" }

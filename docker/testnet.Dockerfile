@@ -9,13 +9,6 @@ RUN apt-get update -y \
       openssl \
       ca-certificates \
       jq \
-      cmake \
-      pkg-config \
-      libssl-dev \
-      git \
-      clang \
-      curl \
-      gnupg \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
@@ -35,7 +28,6 @@ FROM runtime
 WORKDIR /app
 
 COPY --from=builder /app/target/release/battlemon_indexer /app/scripts/entry_point.sh ./
-COPY --from=builder /app/configs/local_config.yaml ./config.yaml
 RUN chmod +x entry_point.sh
 
 ENTRYPOINT ["./entry_point.sh"]

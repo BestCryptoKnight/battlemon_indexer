@@ -1,14 +1,15 @@
+use crate::consts::get_config;
+use crate::models::{ContractEventEnum, NftEvent, NftEventEnum};
 use actix_web::web;
-use actix_web::web::Data;
+use battlemon_near_json_rpc_client_wrapper::JsonRpcWrapper;
 use chrono::Utc;
 use futures::try_join;
-use near_jsonrpc_client::JsonRpcClient;
 use near_lake_framework::near_indexer_primitives::types::ShardId;
 use near_lake_framework::near_indexer_primitives::views::ExecutionStatusView;
 use near_lake_framework::near_indexer_primitives::{
     IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage,
 };
-use nft_models::BuildQuery;
+use nft_models::BuildUrlQuery;
 use serde_json::json;
 use sqlx::postgres::PgArguments;
 use sqlx::query::Query;
@@ -16,11 +17,6 @@ use sqlx::types::Json;
 use sqlx::{PgPool, Postgres};
 use token_metadata_ext::TokenExt;
 use uuid::Uuid;
-
-use crate::config::{get_config, RunSettings};
-use consts::get_contract_acc;
-
-use crate::models::{ContractEventEnum, NftEvent, NftEventEnum, NftEventLogEnum};
 
 pub type GenericError = Box<dyn std::error::Error + Sync + Send>;
 pub type Result<T> = std::result::Result<T, GenericError>;
@@ -31,11 +27,14 @@ pub mod models;
 pub mod startup;
 pub mod telemetry;
 
-#[tracing::instrument(name = "Handling streamer message", skip(streamer_message, db))]
+#[tracing::instrument(
+    name = "Handling streamer message",
+    skip(streamer_message, db, rpc_client)
+)]
 async fn handle_message(
     streamer_message: StreamerMessage,
     db: web::Data<PgPool>,
-    rpc_client: web::Data<JsonRpcClient>,
+    rpc_client: web::Data<JsonRpcWrapper>,
 ) -> Result<()> {
     let nft_events = async {
         for shard in &streamer_message.shards {
@@ -58,18 +57,18 @@ async fn handle_message(
 
 #[tracing::instrument(
     name = "Collecting nft events and store it in database",
-    skip(shard, db)
+    skip(shard, block_timestamp, db, rpc_client)
 )]
 async fn collect_and_store_nft_events(
     shard: &IndexerShard,
     block_timestamp: &u64,
     db: web::Data<PgPool>,
-    rpc_client: web::Data<JsonRpcClient>,
+    rpc_client: web::Data<JsonRpcWrapper>,
 ) -> Result<()> {
     let mut index_in_shard: i32 = 0;
-    let contract_acc = get_contract_acc().await;
+    let contract_id = &get_config().await.contracts.top_contract_id;
     for outcome in &shard.receipt_execution_outcomes {
-        if !outcome.receipt.receiver_id.is_sub_account_of(contract_acc) {
+        if !outcome.receipt.receiver_id.is_sub_account_of(contract_id) {
             continue;
         }
 
@@ -105,13 +104,15 @@ pub fn deserialize_outcome_result(outcome_result: &ExecutionStatusView) -> Resul
 
 #[tracing::instrument(
     name = "Building query for saving contract's event to db",
-    skip(event, outcome_result)
+    skip(event, outcome_result, rpc_client)
 )]
-pub async fn build_query<'a>(
+pub async fn build_database_query<'a>(
     event: ContractEventEnum,
     outcome_result: &ExecutionStatusView,
-    rpc_client: &JsonRpcClient,
+    rpc_client: &JsonRpcWrapper,
 ) -> Option<Query<'a, Postgres, PgArguments>> {
+    let config = get_config().await;
+
     match event {
         ContractEventEnum::NftEvent(NftEvent {
             event: NftEventEnum::NftMint,
@@ -125,17 +126,12 @@ pub async fn build_query<'a>(
             } = deserialize_outcome_result(outcome_result)
                 .expect("Couldn't deserialize outcome result into nft token");
 
-            use serde::Deserialize;
-            #[derive(Deserialize)]
-            struct IpfsHash {
-                hash: String,
-            }
-            let query = model.build_query();
+            let query = model.build_url_query();
             let url = format!("http://screener:8000/save_png{query}");
             let ipfs_json = reqwest::get(url)
                 .await
                 .expect("Couldn't get media from screener")
-                .json::<IpfsHash>()
+                .json::<models::IpfsHash>()
                 .await
                 .expect("Couldn't parse json");
             // todo: add path to ipfs gateway in config
@@ -144,35 +140,22 @@ pub async fn build_query<'a>(
                 "token_id": token_id,
                 "new_media": media_url
             });
-            let contract_method_args_str = contract_method_args_json.to_string();
 
             tracing::info!(
-                "media: {media_url}\n contract's method args: {contract_method_args_str}"
+                "media: {media_url}\n contract's method args: {contract_method_args_json:?}"
             );
-            let main_acc = get_config::<RunSettings>()
-                .expect("Couldn't run indexer")
-                .contract_acc;
-            let nft_acc = format!("nft.{main_acc}");
-            let command = tokio::process::Command::new("near")
-                .args([
-                    "call",
-                    &nft_acc,
-                    "update_token_media",
-                    &contract_method_args_str,
-                    "--accountId",
-                    "battlemon.testnet",
-                    "--deposit",
-                    "1",
-                ])
-                .output()
-                .await
-                .expect("near-cli failed to run");
+            let caller = config.contracts.nft_contract_id.clone();
+            tracing::info!("calling rpc client");
+            rpc_client
+                .call_contract_method(
+                    caller,
+                    "update_token_media".to_string(),
+                    contract_method_args_json,
+                    300_000_000_000_000,
+                    1,
+                )
+                .await;
 
-            let bytes = command.stdout;
-            tracing::info!(
-                "command: {:?}",
-                String::from_utf8(bytes).expect("Found invalid UTF-8")
-            );
             let q = sqlx::query!(
                 r#"
                 INSERT INTO nft_tokens (id, owner_id, token_id, media, model, db_created_at)
@@ -207,17 +190,20 @@ pub async fn build_query<'a>(
     }
 }
 
-#[tracing::instrument(name = "Saving new event to the database", skip(outcome, events, db))]
+#[tracing::instrument(
+    name = "Saving new event to the database",
+    skip(outcome, events, db, rpc_client)
+)]
 pub async fn insert_nft_events(
     outcome: &IndexerExecutionOutcomeWithReceipt,
     events: Vec<ContractEventEnum>,
     db: &PgPool,
-    rpc_client: &JsonRpcClient,
+    rpc_client: &JsonRpcWrapper,
 ) -> Result<()> {
     let mut tx = db.begin().await?;
     for event in events {
         let outcome_result = &outcome.execution_outcome.outcome.status;
-        let query = build_query(event, outcome_result, rpc_client).await;
+        let query = build_database_query(event, outcome_result, rpc_client).await;
         if let Some(query) = query {
             query.execute(&mut tx).await.map_err(|e| {
                 tracing::error!("Failed to execute query: {:?}", e);
@@ -234,7 +220,7 @@ fn collect_nft_events(
     _block_timestamp: &u64,
     _shard_id: &ShardId,
     _index_in_shard: &mut i32,
-) -> Vec<models::ContractEventEnum> {
+) -> Vec<ContractEventEnum> {
     let prefix = "EVENT_JSON:";
 
     outcome

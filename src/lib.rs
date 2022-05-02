@@ -40,7 +40,7 @@ async fn handle_message(
         for shard in &streamer_message.shards {
             collect_and_store_nft_events(
                 shard,
-                &streamer_message.block.header.timestamp,
+                &streamer_message.block.header.height,
                 db.clone(),
                 rpc_client.clone(),
             )
@@ -57,11 +57,11 @@ async fn handle_message(
 
 #[tracing::instrument(
     name = "Collecting nft events and store it in database",
-    skip(shard, block_timestamp, db, rpc_client)
+    skip(shard, db, rpc_client)
 )]
 async fn collect_and_store_nft_events(
     shard: &IndexerShard,
-    block_timestamp: &u64,
+    block_height: &u64,
     db: web::Data<PgPool>,
     rpc_client: web::Data<JsonRpcWrapper>,
 ) -> Result<()> {
@@ -72,12 +72,8 @@ async fn collect_and_store_nft_events(
             continue;
         }
 
-        let nft_events = collect_nft_events(
-            outcome,
-            block_timestamp,
-            &shard.shard_id,
-            &mut index_in_shard,
-        );
+        let nft_events =
+            collect_nft_events(outcome, block_height, &shard.shard_id, &mut index_in_shard);
         if !nft_events.is_empty() {
             insert_nft_events(outcome, nft_events, &db, &rpc_client).await?;
         }

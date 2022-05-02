@@ -1,3 +1,5 @@
+use crate::Result as BattlemonResult;
+use battlemon_near_json_rpc_client_wrapper::JsonRpcWrapper;
 use near_crypto::{InMemorySigner, PublicKey, SecretKey};
 use near_lake_framework::near_indexer_primitives::types::AccountId;
 use near_lake_framework::LakeConfig;
@@ -46,6 +48,22 @@ pub struct AwsSettings {
     pub start_from_last_block: bool,
 }
 
+impl AwsSettings {
+    pub async fn lake_config(&self, rpc_client: &JsonRpcWrapper) -> BattlemonResult<LakeConfig> {
+        let mut ret = LakeConfig {
+            s3_endpoint: self.s3_endpoint.clone(),
+            s3_bucket_name: self.s3_bucket_name.clone(),
+            s3_region_name: self.s3_region_name.clone(),
+            start_block_height: self.start_block_height,
+        };
+
+        if self.start_from_last_block {
+            ret.start_block_height = rpc_client.final_block_height().await?
+        }
+
+        Ok(ret)
+    }
+}
 
 #[derive(Deserialize)]
 pub struct DatabaseSettings {

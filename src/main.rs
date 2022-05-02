@@ -22,7 +22,9 @@ async fn main() -> Result<()> {
         NEAR_TESTNET_ARCHIVAL_RPC_URL,
         config.near_credentials.clone().into(),
     );
-    let stream = near_lake_framework::streamer(config.aws.lake_config(&rpc_client).await?);
+    tracing::info!("Loading config for NEAR Lake Framework");
+    let lake_config = config.aws.lake_config(&rpc_client).await?;
+    let stream = near_lake_framework::streamer(lake_config);
     // todo: add to config testnet or mainnet setting for rpc
 
     startup::run_indexer(stream, pool_conn, rpc_client)

@@ -154,7 +154,8 @@ pub async fn build_database_query<'a>(
                     300_000_000_000_000,
                     1,
                 )
-                .await;
+                .await
+                .expect("Couldn't call contract's method");
 
             let q = sqlx::query!(
                 r#"

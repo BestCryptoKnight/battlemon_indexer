@@ -8,6 +8,7 @@ aws:
   s3_bucket_name: "near-lake-data-testnet"
   s3_region_name: "eu-central-1"
   start_block_height: 87486948
+  start_from_last_block: true
 near_credentials:
   account_id: "battlemon.testnet"
   public_key: "ed25519:CUxcr1GDrVqNN5g8XQ4i1YMMKjkTBdHG43L1apdVcgyX"

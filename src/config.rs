@@ -7,13 +7,20 @@ use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct AppSettings {
-    pub contract_acc: String,
+    pub contracts: ContractSettings,
     pub database: DatabaseSettings,
     pub aws: AwsSettings,
     pub near_credentials: NearCredsSettings,
 }
 
 #[derive(Deserialize)]
+pub struct ContractSettings {
+    pub top_contract_id: AccountId,
+    pub nft_contract_id: AccountId,
+    pub market_contract_id: AccountId,
+}
+
+#[derive(Deserialize, Clone)]
 pub struct NearCredsSettings {
     pub account_id: AccountId,
     pub public_key: PublicKey,
@@ -30,7 +37,7 @@ impl From<NearCredsSettings> for InMemorySigner {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct AwsSettings {
     pub s3_endpoint: Option<String>,
     pub s3_bucket_name: String,

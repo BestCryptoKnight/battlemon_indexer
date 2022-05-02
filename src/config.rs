@@ -1,3 +1,5 @@
+use near_crypto::{InMemorySigner, PublicKey, SecretKey};
+use near_lake_framework::near_indexer_primitives::types::AccountId;
 use near_lake_framework::LakeConfig;
 use serde::Deserialize;
 use sqlx::postgres::PgConnectOptions;
@@ -8,6 +10,24 @@ pub struct AppSettings {
     pub contract_acc: String,
     pub database: DatabaseSettings,
     pub aws: AwsSettings,
+    pub near_credentials: NearCredsSettings,
+}
+
+#[derive(Deserialize)]
+pub struct NearCredsSettings {
+    pub account_id: AccountId,
+    pub public_key: PublicKey,
+    pub private_key: SecretKey,
+}
+
+impl From<NearCredsSettings> for InMemorySigner {
+    fn from(near_creds: NearCredsSettings) -> Self {
+        Self {
+            account_id: near_creds.account_id,
+            public_key: near_creds.public_key,
+            secret_key: near_creds.private_key,
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -17,7 +37,6 @@ pub struct AwsSettings {
     pub s3_region_name: String,
     pub start_block_height: u64,
 }
-
 
 impl From<AwsSettings> for LakeConfig {
     fn from(aws: AwsSettings) -> Self {
@@ -57,7 +76,7 @@ impl DatabaseSettings {
     name = "Loading configuration from file `config.yaml`",
     fields(id = %Uuid::new_v4())
 )]
-pub fn get_config() -> Result<AppSettings, config::ConfigError> {
+pub fn load_config() -> Result<AppSettings, config::ConfigError> {
     let mut settings = config::Config::default();
     settings.merge(config::File::with_name("config"))?;
     settings.try_into()

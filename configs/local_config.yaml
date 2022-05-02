@@ -1,13 +1,13 @@
 app_port: 8000
 contracts:
-  top_contract_id: "dev-20220414034725-94826614851521"
-  nft_contract_id: "nft.dev-20220414034725-94826614851521"
-  market_contract_id: "market.dev-20220414034725-94826614851521"
+  top_contract_id: "dev-20220428122624-64729788379126"
+  nft_contract_id: "nft.dev-20220428122624-64729788379126"
+  market_contract_id: "market.dev-20220428122624-64729788379126"
 aws:
   s3_endpoint: null
   s3_bucket_name: "near-lake-data-testnet"
   s3_region_name: "eu-central-1"
-  start_block_height: 87486948
+  start_block_height: 88623882
   start_from_last_block: true
 near_credentials:
   account_id: "battlemon.testnet"

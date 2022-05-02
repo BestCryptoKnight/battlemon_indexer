@@ -46,16 +46,6 @@ pub struct AwsSettings {
     pub start_from_last_block: bool,
 }
 
-impl From<AwsSettings> for LakeConfig {
-    fn from(aws: AwsSettings) -> Self {
-        Self {
-            s3_endpoint: aws.s3_endpoint,
-            s3_bucket_name: aws.s3_bucket_name,
-            s3_region_name: aws.s3_region_name,
-            start_block_height: aws.start_block_height,
-        }
-    }
-}
 
 #[derive(Deserialize)]
 pub struct DatabaseSettings {

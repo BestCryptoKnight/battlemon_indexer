@@ -1,5 +1,4 @@
 target/
 docker/
 .env
-battlemon.testnet.json
 .cargo

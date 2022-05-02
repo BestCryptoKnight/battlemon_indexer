@@ -1,9 +1,5 @@
 target
 .idea
-.git
-.gitignore
-.dockerignore
-credentials
 .env
-battlemon.testnet.json
 .cargo
+configs

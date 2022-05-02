@@ -18,12 +18,12 @@ async fn main() -> Result<()> {
     let pool_conn = PgPoolOptions::new()
         .connect_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(config.database.with_db());
-    let stream = near_lake_framework::streamer(config.aws.clone().into());
-    // todo: add to config testnet or mainnet setting for rpc
     let rpc_client = JsonRpcWrapper::connect(
         NEAR_TESTNET_ARCHIVAL_RPC_URL,
         config.near_credentials.clone().into(),
     );
+    let stream = near_lake_framework::streamer(config.aws.lake_config(&rpc_client).await?);
+    // todo: add to config testnet or mainnet setting for rpc
 
     startup::run_indexer(stream, pool_conn, rpc_client)
         .await

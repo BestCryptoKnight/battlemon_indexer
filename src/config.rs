@@ -43,6 +43,7 @@ pub struct AwsSettings {
     pub s3_bucket_name: String,
     pub s3_region_name: String,
     pub start_block_height: u64,
+    pub start_from_last_block: bool,
 }
 
 impl From<AwsSettings> for LakeConfig {

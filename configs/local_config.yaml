@@ -1,5 +1,8 @@
 app_port: 8000
-contract_acc: "dev-20220414034725-94826614851521"
+contracts:
+  top_contract_id: "dev-20220414034725-94826614851521"
+  nft_contract_id: "nft.dev-20220414034725-94826614851521"
+  market_contract_id: "market.dev-20220414034725-94826614851521"
 aws:
   s3_endpoint: null
   s3_bucket_name: "near-lake-data-testnet"

@@ -7,25 +7,23 @@ use near_crypto::{InMemorySigner, SecretKey};
 use near_lake_framework::{LakeConfig, LakeConfigBuilder};
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
-use sqlx::postgres::PgConnectOptions;
 use std::str::FromStr;
-use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
-pub struct AppSettings {
-    pub contracts: ContractSettings,
-    pub database: DatabaseSettings,
-    pub near_lake: NearLakeSettings,
+pub struct AppConfig {
+    pub contracts: ContractConfig,
+    pub rest: RestConfig,
+    pub near_lake: NearLakeConfig,
 }
 
 #[derive(serde::Deserialize)]
-pub struct ContractSettings {
+pub struct ContractConfig {
     top_contract_id: AccountId,
     nft_contract_id: AccountId,
     market_contract_id: AccountId,
 }
 
-impl ContractSettings {
+impl ContractConfig {
     pub fn ids(&self) -> (&AccountId, &AccountId, &AccountId) {
         (
             &self.top_contract_id,
@@ -44,7 +42,7 @@ impl ContractSettings {
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct NearCredentialsSettings {
+pub struct NearCredentialsConfig {
     pub account_id: AccountId,
     pub private_key: Secret<String>,
 }
@@ -66,16 +64,16 @@ impl NearNetworkKind {
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct NearLakeSettings {
+pub struct NearLakeConfig {
     pub network: NearNetworkKind,
     pub start_block_height: u64,
     pub start_from_last_block: bool,
     aws_access_key_id: Secret<String>,
     aws_secret_access_key: Secret<String>,
-    near_credentials: NearCredentialsSettings,
+    near_credentials: NearCredentialsConfig,
 }
 
-impl NearLakeSettings {
+impl NearLakeConfig {
     pub async fn near_lake_config(&self) -> anyhow::Result<LakeConfig> {
         let aws_creds = near_lake_framework::Credentials::new(
             self.aws_access_key_id.expose_secret(),
@@ -114,33 +112,29 @@ impl NearLakeSettings {
 }
 
 #[derive(Deserialize, Clone)]
-pub struct DatabaseSettings {
-    pub username: String,
-    pub password: String,
-    pub port: u16,
+pub struct RestConfig {
     pub host: String,
-    pub db_name: String,
+    pub port: u16,
+    pub username: String,
+    pub password: Secret<String>,
 }
 
-impl DatabaseSettings {
-    pub fn with_db(&self) -> PgConnectOptions {
-        self.without_db().database(&self.db_name)
+impl RestConfig {
+    pub fn base_url(&self) -> String {
+        format!("{}:{}", self.host, self.port)
     }
 
-    pub fn without_db(&self) -> PgConnectOptions {
-        PgConnectOptions::new()
-            .host(&self.host)
-            .username(&self.username)
-            .password(&self.password)
-            .port(self.port)
+    pub fn username(&self) -> &str {
+        &self.username
+    }
+
+    pub fn password(&self) -> &str {
+        &self.password.expose_secret()
     }
 }
 
-#[tracing::instrument(
-    name = "Loading configuration from file `config.yaml`",
-    fields(id = %Uuid::new_v4())
-)]
-pub fn load_config() -> anyhow::Result<AppSettings> {
+#[tracing::instrument(name = "Loading configuration from file `config.yaml`")]
+pub fn load_config() -> anyhow::Result<AppConfig> {
     let config_path = std::env::current_dir()
         .context("Failed to determine current directory")?
         .join("configs");
@@ -156,7 +150,8 @@ pub fn load_config() -> anyhow::Result<AppSettings> {
         .context("Failed to deserialize config files into `AppSettings`")
 }
 
-pub async fn get_config() -> &'static AppSettings {
+#[tracing::instrument(name = "Getting loaded configuration")]
+pub async fn get_config() -> &'static AppConfig {
     CONFIG
         .get_or_init(|| async { load_config().expect("Couldn't load config for indexer") })
         .await

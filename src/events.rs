@@ -22,7 +22,7 @@ pub async fn handle_request_error(response: Response) -> anyhow::Result<()> {
 
         tracing::error!("Failed to store event. Error: {error_message}");
     }
-    
+
     Ok(())
 }
 

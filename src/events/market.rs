@@ -21,7 +21,7 @@ pub async fn handle_market_events(
         let request = build_market_request(event, outcome_result, client.clone()).await?;
         let response = request.send().await?;
 
-        events::handle_request_error(response).await;
+        events::handle_request_error(response).await?;
 
         tracing::info!("Successfully stored nft event");
     }

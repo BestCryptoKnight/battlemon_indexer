@@ -660,6 +660,7 @@ dependencies = [
  "near-lake-framework",
  "nft_models",
  "reqwest",
+ "rust_decimal",
  "secrecy",
  "serde",
  "serde_json",
@@ -2735,6 +2736,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1facec54cb5e0dc08553501fa740091086d0259ad0067e0d4103448e4cb22ed3"
 dependencies = [
  "digest 0.10.3",
+]
+
+[[package]]
+name = "rust_decimal"
+version = "1.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34a3bb58e85333f1ab191bf979104b586ebd77475bc6681882825f4532dfe87c"
+dependencies = [
+ "arrayvec 0.7.2",
+ "num-traits",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

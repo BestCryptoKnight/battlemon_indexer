@@ -1,8 +1,9 @@
 use self::config::get_config;
-use crate::models::{NftEvent, NftEventKind};
+use crate::models::{MarketEventKind, NftEventKind, T};
 use actix_web::web;
 use anyhow::{anyhow, Context};
 use consts::EVENT_PREFIX;
+use events::{market, nft};
 use futures::try_join;
 use near_lake_framework::near_indexer_primitives::views::ExecutionStatusView;
 use near_lake_framework::near_indexer_primitives::{
@@ -14,6 +15,7 @@ use token_metadata_ext::{TokenExt, TokenMetadata};
 
 pub mod config;
 pub mod consts;
+pub mod events;
 pub mod models;
 pub mod startup;
 pub mod telemetry;
@@ -55,161 +57,19 @@ async fn collect_and_store_contracts_events(
     for outcome in &shard.receipt_execution_outcomes {
         match outcome.receipt.receiver_id.as_ref() {
             id if id == nft.as_ref() => {
-                let nft_events = collect_nft_events(outcome);
-                handle_nft_events(outcome, nft_events, client.clone()).await?;
+                let nft_events = events::collect_contract_events(outcome);
+                nft::handle_nft_events(outcome, nft_events, client.clone()).await?;
             }
-            // id if id == market.as_ref() => {
-            // let market_events = collect_market_events(
-            //     outcome,
-            //     block_height,
-            //     &shard.shard_id,
-            //     &mut index_in_shard,
-            // );
-            // if !market_events.is_empty() {
-            //     insert_market_events(outcome, market_events, &db, &rpc_client).await?;
-            // }
-            // todo!()
-            // }
+            id if id == market.as_ref() => {
+                let market_events = events::collect_contract_events(outcome);
+                market::handle_market_events(outcome, market_events, client.clone()).await?;
+            }
             _ => continue,
         }
     }
 
     Ok(())
 }
-
-#[tracing::instrument(
-    name = "Deserialize outcome result into nft model",
-    skip(outcome_result)
-)]
-pub fn deserialize_outcome_result_into_token(
-    outcome_result: &ExecutionStatusView,
-) -> anyhow::Result<TokenExt> {
-    let token = match outcome_result {
-        ExecutionStatusView::SuccessValue(v) => {
-            let bytes = base64::decode(v)?;
-            serde_json::from_slice::<TokenExt>(bytes.as_slice())?
-        }
-        _ => unreachable!(),
-    };
-
-    Ok(token)
-}
-
-#[tracing::instrument(
-    name = "Building request for saving nft contract's event",
-    skip(event, outcome_result, client)
-)]
-pub async fn build_nft_request(
-    NftEvent { event, .. }: NftEvent,
-    outcome_result: &ExecutionStatusView,
-    client: web::Data<reqwest::Client>,
-) -> anyhow::Result<reqwest::RequestBuilder> {
-    let config = get_config().await;
-    // todo:
-    //  - extract from rest and indexer models for db and json to separate crate.
-    //  - implement conversion from contracts models to them
-    match event {
-        NftEventKind::NftMint => {
-            let TokenExt {
-                token_id,
-                owner_id,
-                metadata,
-                model,
-                ..
-            } = deserialize_outcome_result_into_token(outcome_result)
-                .context("Failed to deserialize nft token")?;
-
-            let TokenMetadata {
-                title,
-                description,
-                media,
-                copies,
-                issued_at,
-                expires_at,
-                ..
-            } = metadata.unwrap();
-
-            let nft_token = json!({
-                "owner_id": owner_id,
-                "token_id": token_id,
-                "title": title,
-                "description": description,
-                "media": media,
-                "media_hash": null,
-                "copies": copies,
-                "issued_at": issued_at,
-                "expires_at": expires_at,
-                "model": model,
-            });
-
-            let base_url = config.rest.base_url();
-            let request = client
-                .post(format!("{base_url}/nft_tokens"))
-                .header("Content-Type", "application/json")
-                .basic_auth(config.rest.username(), Some(config.rest.password()))
-                .json(&nft_token);
-
-            Ok(request)
-        }
-        _ => Err(anyhow!("The event is not implemented, {:?}", event)),
-    }
-}
-
-#[tracing::instrument(
-    name = "Sending request to the rest service to store new events to the database",
-    skip(outcome, events, client)
-)]
-pub async fn handle_nft_events(
-    outcome: &IndexerExecutionOutcomeWithReceipt,
-    events: Vec<NftEvent>,
-    client: web::Data<reqwest::Client>,
-) -> anyhow::Result<()> {
-    for event in events {
-        let outcome_result = &outcome.execution_outcome.outcome.status;
-        let request = build_nft_request(event, outcome_result, client.clone()).await?;
-        let response = request.send().await?;
-        if !response.status().is_success() {
-            let error_json = response
-                .json::<Value>()
-                .await
-                .context("Failed to deserialize error from response")?;
-            let error_message = error_json
-                .get("error")
-                .context("Failed to get an error from response")?
-                .as_str()
-                .unwrap();
-
-            tracing::error!("Failed to store nft event. Error: {error_message}");
-            panic!();
-        }
-
-        tracing::info!("Successfully stored nft event");
-    }
-    Ok(())
-}
-
-#[tracing::instrument(name = "Collection NFT events from logs", skip(outcome))]
-fn collect_nft_events(
-    outcome: &IndexerExecutionOutcomeWithReceipt,
-    // _block_timestamp: &u64,
-    // _shard_id: &ShardId,
-    // _index_in_shard: &mut i32,
-) -> Vec<NftEvent> {
-    outcome
-        .execution_outcome
-        .outcome
-        .logs
-        .iter()
-        .filter_map(|log| log.trim().strip_prefix(EVENT_PREFIX))
-        .filter_map(|v| {
-            serde_json::from_str(v).unwrap_or_else(|e| {
-                tracing::error!("Couldn't parse: {}", e);
-                None
-            })
-        })
-        .collect()
-}
-
 //         let event: nft_types::NearEvent = match serde_json::from_str::<'_, nft_types::NearEvent>(
 //             log[prefix.len()..].trim(),
 //         ) {

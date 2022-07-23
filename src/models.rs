@@ -30,7 +30,7 @@ pub enum NftEventLogKind {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NftEvent {
+pub struct T {
     pub standard: StandardKind,
     pub version: VersionKind,
     pub event: NftEventKind,
@@ -42,6 +42,12 @@ pub struct NftEvent {
 pub enum NftEventKind {
     NftMint,
     NftBurn,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MarketEventKind {
+    MarketSale(MarketSale),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,7 +87,7 @@ mod tests {
         let nft_event = serde_json::from_str(&json).expect("Couldn't deserialize json");
 
         match nft_event {
-            ContractEventEnum::NftEvent(NftEvent {
+            ContractEventEnum::NftEvent(T {
                 standard: StandardKind::Nep171,
                 version: VersionKind::V1_0_0,
                 event: NftEventKind::NftMint,

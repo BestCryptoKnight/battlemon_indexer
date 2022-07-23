@@ -4,8 +4,12 @@ use crate::{
 };
 use actix_web::web;
 use anyhow::{anyhow, Context};
+use chrono::Utc;
 use reqwest::Response;
+use rust_decimal::{Decimal, MathematicalOps};
 use serde_json::Value;
+use std::str::FromStr;
+use uuid::Uuid;
 
 #[tracing::instrument(
     name = "Sending request to the rest service to store new market events to the database",
@@ -38,12 +42,25 @@ pub async fn build_market_request(
     let config = get_config().await;
     match event {
         MarketEventKind::MarketSale(sale) => {
+            let price = Decimal::from_str(&sale.price)
+                .context("Failed to parse price into `Decimal` from `String`")?;
+
+            let price = price / Decimal::new(10, 0).powu(24);
+
+            let json = serde_json::json!({
+                "id": Uuid::new_v4(),
+                "prev_owner": sale.prev_owner,
+                "curr_owner": sale.curr_owner,
+                "token_id": sale.token_id,
+                "price": price,
+                "date": Utc::now(),
+            });
             let base_url = config.rest.base_url();
             let request = client
                 .post(format!("{base_url}/sales"))
                 .header("Content-Type", "application/json")
                 .basic_auth(config.rest.username(), Some(config.rest.password()))
-                .json(&sale);
+                .json(&json);
 
             Ok(request)
         }

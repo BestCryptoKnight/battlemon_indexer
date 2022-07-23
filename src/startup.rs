@@ -1,20 +1,17 @@
 use actix_web::web;
-use battlemon_near_json_rpc_client_wrapper::JsonRpcWrapper;
 use tokio::sync::mpsc;
 
-use crate::{handle_message, PgPool, StreamerMessage};
+use crate::{handle_message, StreamerMessage};
 
-#[tracing::instrument(name = "Run indexer", skip(stream, pool_conn, rpc_client))]
+#[tracing::instrument(name = "Run indexer", skip(stream, client))]
 pub async fn run_indexer(
     mut stream: mpsc::Receiver<StreamerMessage>,
-    pool_conn: PgPool,
-    rpc_client: JsonRpcWrapper,
-) -> crate::Result<()> {
-    let pool_conn = web::Data::new(pool_conn);
-    let rpc_client = web::Data::new(rpc_client);
+    client: reqwest::Client,
+) -> anyhow::Result<()> {
+    let client = web::Data::new(client);
     while let Some(stream_message) = stream.recv().await {
-        handle_message(stream_message, pool_conn.clone(), rpc_client.clone()).await?
+        handle_message(stream_message, client.clone()).await?
     }
 
-    Ok(())
+    Ok::<_, anyhow::Error>(())
 }

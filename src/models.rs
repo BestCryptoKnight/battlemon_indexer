@@ -1,28 +1,27 @@
 use serde::{Deserialize, Serialize};
-use sqlx::types::Decimal;
+
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[serde(untagged)]
+// pub enum ContractEventEnum {
+//     MarketSale(MarketSale),
+//     NftEvent(NftEvent),
+// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ContractEventEnum {
-    MarketSale(MarketSale),
-    NftEvent(NftEvent),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum StandardEnum {
+pub enum StandardKind {
     #[serde(rename = "nep171")]
     Nep171,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum VersionEnum {
+pub enum VersionKind {
     #[serde(rename = "1.0.0")]
     V1_0_0,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum NftEventLogEnum {
+pub enum NftEventLogKind {
     NftMintLog {
         owner_id: String,
         token_ids: Vec<String>,
@@ -32,15 +31,15 @@ pub enum NftEventLogEnum {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NftEvent {
-    pub standard: StandardEnum,
-    pub version: VersionEnum,
-    pub event: NftEventEnum,
-    pub data: Vec<NftEventLogEnum>,
+    pub standard: StandardKind,
+    pub version: VersionKind,
+    pub event: NftEventKind,
+    pub data: Vec<NftEventLogKind>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum NftEventEnum {
+pub enum NftEventKind {
     NftMint,
     NftBurn,
 }
@@ -50,7 +49,7 @@ pub struct MarketSale {
     pub prev_owner: String,
     pub curr_owner: String,
     pub token_id: String,
-    pub price: Decimal,
+    pub price: String,
 }
 
 #[derive(Deserialize)]
@@ -83,13 +82,13 @@ mod tests {
 
         match nft_event {
             ContractEventEnum::NftEvent(NftEvent {
-                standard: StandardEnum::Nep171,
-                version: VersionEnum::V1_0_0,
-                event: NftEventEnum::NftMint,
+                standard: StandardKind::Nep171,
+                version: VersionKind::V1_0_0,
+                event: NftEventKind::NftMint,
                 data,
             }) => {
                 let nft_event_log = data.get(0).expect("must be at least one event");
-                assert!(matches!(nft_event_log, NftEventLogEnum::NftMintLog { .. }))
+                assert!(matches!(nft_event_log, NftEventLogKind::NftMintLog { .. }))
             }
             _ => panic!("deserialized struct is wrong."),
         }

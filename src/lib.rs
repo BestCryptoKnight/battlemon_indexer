@@ -44,7 +44,7 @@ async fn handle_message(
 }
 
 #[tracing::instrument(
-    name = "Collecting nft events and store it in database",
+    name = "Collecting contracts events and store it in the database",
     skip(shard, client)
 )]
 async fn collect_and_store_contracts_events(

@@ -26,6 +26,7 @@ RUN cargo build --release --bin battlemon_indexer
 
 FROM runtime
 WORKDIR /app
+RUN mkdir -p /app/configs
 
 COPY --from=builder /app/target/release/battlemon_indexer /app/scripts/entry_point.sh ./
 RUN chmod +x entry_point.sh

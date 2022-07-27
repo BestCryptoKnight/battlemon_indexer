@@ -57,10 +57,12 @@ async fn collect_and_store_contracts_events(
     for outcome in &shard.receipt_execution_outcomes {
         match outcome.receipt.receiver_id.as_ref() {
             id if id == nft.as_ref() => {
+                tracing::info!("Handle NFT events");
                 let nft_events = events::collect_contract_events(outcome);
                 nft::handle_nft_events(outcome, nft_events, client.clone()).await?;
             }
             id if id == market.as_ref() => {
+                tracing::info!("Handle Market events");
                 let market_events = events::collect_contract_events(outcome);
                 market::handle_market_events(outcome, market_events, client.clone()).await?;
             }

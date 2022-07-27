@@ -1,17 +1,14 @@
 use self::config::get_config;
-use crate::models::{MarketEventKind, NftEventKind, T};
+use crate::models::{MarketEventKind, NftEventKind};
 use actix_web::web;
-use anyhow::{anyhow, Context};
 use consts::EVENT_PREFIX;
 use events::{market, nft};
 use futures::try_join;
-use near_lake_framework::near_indexer_primitives::views::ExecutionStatusView;
 use near_lake_framework::near_indexer_primitives::{
-    IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage,
+    IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage, views::ExecutionStatusView,
 };
-use secrecy::ExposeSecret;
-use serde_json::{json, Value};
-use token_metadata_ext::{TokenExt, TokenMetadata};
+
+use token_metadata_ext::TokenMetadata;
 
 pub mod config;
 pub mod consts;
@@ -20,7 +17,11 @@ pub mod models;
 pub mod startup;
 pub mod telemetry;
 
-#[tracing::instrument(name = "Handling streamer message", skip(streamer_message, client))]
+#[tracing::instrument(
+    name = "Handling streamer message",
+    fields(block = %streamer_message.block.header.height),
+    skip(streamer_message, client)
+)]
 async fn handle_message(
     streamer_message: StreamerMessage,
     client: web::Data<reqwest::Client>,
@@ -49,7 +50,7 @@ async fn handle_message(
 )]
 async fn collect_and_store_contracts_events(
     shard: &IndexerShard,
-    // block_height: &u64,
+    // _block_height: &u64,
     client: web::Data<reqwest::Client>,
 ) -> anyhow::Result<()> {
     // let mut index_in_shard: i32 = 0;

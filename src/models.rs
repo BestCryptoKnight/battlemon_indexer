@@ -30,7 +30,7 @@ pub enum NftEventLogKind {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct T {
+pub struct NftEvent {
     pub standard: StandardKind,
     pub version: VersionKind,
     pub event: NftEventKind,

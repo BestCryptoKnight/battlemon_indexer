@@ -1,11 +1,11 @@
+use crate::models::NftEvent;
 use crate::{
     events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt, NftEventKind,
-    TokenMetadata, EVENT_PREFIX,
+    TokenMetadata,
 };
 use actix_web::web;
 use anyhow::{anyhow, Context};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 use token_metadata_ext::TokenExt;
 
 #[tracing::instrument(
@@ -28,7 +28,7 @@ pub fn deserialize_outcome_result_into_token(
 
 #[tracing::instrument(
     name = "Building request for saving nft contract's event",
-    skip(event, outcome_result, client)
+    skip(outcome_result, client)
 )]
 pub async fn build_nft_request(
     event: NftEventKind,
@@ -88,16 +88,16 @@ pub async fn build_nft_request(
 
 #[tracing::instrument(
     name = "Sending request to the rest service to store new nft events to the database",
-    skip(outcome, events, client)
+    skip(outcome, client)
 )]
 pub async fn handle_nft_events(
     outcome: &IndexerExecutionOutcomeWithReceipt,
-    events: Vec<NftEventKind>,
+    events: Vec<NftEvent>,
     client: web::Data<reqwest::Client>,
 ) -> anyhow::Result<()> {
     for event in events {
         let outcome_result = &outcome.execution_outcome.outcome.status;
-        let request = build_nft_request(event, outcome_result, client.clone()).await?;
+        let request = build_nft_request(event.event, outcome_result, client.clone()).await?;
         let response = request.send().await?;
         events::handle_request_error(response).await?;
         tracing::info!("Successfully stored nft event");

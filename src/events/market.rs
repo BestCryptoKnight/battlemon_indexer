@@ -1,13 +1,10 @@
 use crate::{
     events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt, MarketEventKind,
-    EVENT_PREFIX,
 };
 use actix_web::web;
 use anyhow::{anyhow, Context};
 use chrono::Utc;
-use reqwest::Response;
 use rust_decimal::{Decimal, MathematicalOps};
-use serde_json::Value;
 use std::str::FromStr;
 use uuid::Uuid;
 

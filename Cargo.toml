@@ -26,5 +26,5 @@ battlemon_near_json_rpc_client_wrapper = { git = "https://github.com/battlemon-p
 base64 = "0.13.0"
 reqwest = { version = "0.11.11", features = ["json"] }
 token_metadata_ext = { git = "https://github.com/battlemon-project/contracts" }
-battlemon_models = { git = "https://github.com/battlemon-project/battlemon_models" }
+battlemon_models = { git = "https://github.com/battlemon-project/battlemon_models", features = ["market"] }
 secrecy = { version = "0.8.0", features = ["serde"] }

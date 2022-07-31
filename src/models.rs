@@ -1,5 +1,5 @@
+use battlemon_models::market::SaleForContract;
 use serde::{Deserialize, Serialize};
-
 // #[derive(Debug, Clone, Serialize, Deserialize)]
 // #[serde(untagged)]
 // pub enum ContractEventEnum {
@@ -47,15 +47,7 @@ pub enum NftEventKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum MarketEventKind {
-    MarketSale(MarketSale),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MarketSale {
-    pub prev_owner: String,
-    pub curr_owner: String,
-    pub token_id: String,
-    pub price: String,
+    MarketSale(SaleForContract),
 }
 
 #[derive(Deserialize)]
@@ -87,12 +79,12 @@ mod tests {
         let nft_event = serde_json::from_str(&json).expect("Couldn't deserialize json");
 
         match nft_event {
-            ContractEventEnum::NftEvent(T {
+            NftEvent {
                 standard: StandardKind::Nep171,
                 version: VersionKind::V1_0_0,
                 event: NftEventKind::NftMint,
                 data,
-            }) => {
+            } => {
                 let nft_event_log = data.get(0).expect("must be at least one event");
                 assert!(matches!(nft_event_log, NftEventLogKind::NftMintLog { .. }))
             }

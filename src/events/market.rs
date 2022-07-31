@@ -6,7 +6,6 @@ use anyhow::{anyhow, Context};
 use chrono::Utc;
 use rust_decimal::{Decimal, MathematicalOps};
 use std::str::FromStr;
-use uuid::Uuid;
 
 #[tracing::instrument(
     name = "Sending request to the rest service to store new market events to the database",
@@ -45,7 +44,6 @@ pub async fn build_market_request(
             let price = price / Decimal::new(10, 0).powu(24);
 
             let json = serde_json::json!({
-                "id": Uuid::new_v4(),
                 "prev_owner": sale.prev_owner,
                 "curr_owner": sale.curr_owner,
                 "token_id": sale.token_id,

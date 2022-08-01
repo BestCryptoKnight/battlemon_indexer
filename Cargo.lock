@@ -678,7 +678,10 @@ dependencies = [
 name = "battlemon_models"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "mixin",
+ "near-contract-standards",
+ "near-sdk",
  "rust_decimal",
  "serde",
 ]

@@ -1,4 +1,4 @@
-use battlemon_models::market::SaleForContract;
+use battlemon_models::market::sale_contract::SaleForContract;
 use serde::{Deserialize, Serialize};
 // #[derive(Debug, Clone, Serialize, Deserialize)]
 // #[serde(untagged)]

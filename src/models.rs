@@ -1,4 +1,3 @@
-use battlemon_models::market::sale_contract::SaleForContract;
 use serde::{Deserialize, Serialize};
 // #[derive(Debug, Clone, Serialize, Deserialize)]
 // #[serde(untagged)]
@@ -6,6 +5,7 @@ use serde::{Deserialize, Serialize};
 //     MarketSale(MarketSale),
 //     NftEvent(NftEvent),
 // }
+// todo: move all models to battlemon_models crate
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum StandardKind {
@@ -42,12 +42,6 @@ pub struct NftEvent {
 pub enum NftEventKind {
     NftMint,
     NftBurn,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum MarketEventKind {
-    MarketSale(SaleForContract),
 }
 
 #[derive(Deserialize)]

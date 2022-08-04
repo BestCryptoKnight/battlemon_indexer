@@ -2,6 +2,7 @@ use crate::{
     events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt, MarketEventKind,
 };
 use actix_web::web;
+use battlemon_models::market::events::MarketEventKind;
 use battlemon_models::market::SaleForInserting;
 
 #[tracing::instrument(
@@ -32,18 +33,25 @@ pub async fn build_market_request(
     _outcome_result: &ExecutionStatusView,
     client: web::Data<reqwest::Client>,
 ) -> anyhow::Result<reqwest::RequestBuilder> {
-    let config = get_config().await;
-    match event {
-        MarketEventKind::MarketSale(sale) => {
-            let json: SaleForInserting = sale.into();
-            let base_url = config.rest.base_url();
-            let request = client
-                .post(format!("{base_url}/sales"))
-                .header("Content-Type", "application/json")
-                .basic_auth(config.rest.username(), Some(config.rest.password()))
-                .json(&json);
+    use MarketEventKind::*;
 
-            Ok(request)
+    let config = get_config().await;
+    let base_url = config.rest.base_url();
+
+    let request_builder = match event {
+        Sale(sale) => {
+            let json: SaleForInserting = sale.into();
+            client.post(format!("{base_url}/sales")).json(&json)
         }
-    }
+        AddBid(bid) => client.post(format!("{base_url}/bids")).json(&bid),
+        AddAsk(ask) => client.post(format!("{base_url}/asks")).json(&ask),
+        RemoveBid(bid) => client.delete(format!("{base_url}/bids")).json(&bid),
+        RemoveAsk(ask) => client.delete(format!("{base_url}/asks")).json(&ask),
+    };
+
+    let ret = request_builder
+        .header("Content-Type", "application/json")
+        .basic_auth(config.rest.username(), Some(config.rest.password()));
+
+    Ok(ret)
 }

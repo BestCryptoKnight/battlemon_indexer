@@ -1,6 +1,4 @@
-use crate::{
-    events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt, MarketEventKind,
-};
+use crate::{events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt};
 use actix_web::web;
 use battlemon_models::market::events::MarketEventKind;
 use battlemon_models::market::SaleForInserting;

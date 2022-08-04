@@ -1,7 +1,7 @@
 use crate::{events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt};
 use actix_web::web;
 use battlemon_models::market::events::MarketEventKind;
-use battlemon_models::market::SaleForInserting;
+use battlemon_models::market::sale::SaleForRest;
 
 #[tracing::instrument(
     name = "Sending request to the rest service to store new market events to the database",
@@ -38,7 +38,7 @@ pub async fn build_market_request(
 
     let request_builder = match event {
         Sale(sale) => {
-            let json: SaleForInserting = sale.into();
+            let json: SaleForRest = sale.into();
             client.post(format!("{base_url}/sales")).json(&json)
         }
         AddBid(bid) => client.post(format!("{base_url}/bids")).json(&bid),

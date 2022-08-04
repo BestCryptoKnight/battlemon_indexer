@@ -1,11 +1,11 @@
 use self::config::get_config;
-use crate::models::{MarketEventKind, NftEventKind};
+use crate::models::NftEventKind;
 use actix_web::web;
 use consts::EVENT_PREFIX;
 use events::{market, nft};
 use futures::try_join;
 use near_lake_framework::near_indexer_primitives::{
-    IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage, views::ExecutionStatusView,
+    views::ExecutionStatusView, IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage,
 };
 
 use token_metadata_ext::TokenMetadata;

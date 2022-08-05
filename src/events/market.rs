@@ -26,7 +26,7 @@ pub async fn handle_market_events(
 
 #[tracing::instrument(
     name = "Building request for saving market contract's event",
-    skip(event, _outcome_result, client)
+    skip(_outcome_result, client)
 )]
 pub async fn build_market_request(
     event: MarketEventKind,

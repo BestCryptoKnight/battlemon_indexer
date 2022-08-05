@@ -1,7 +1,9 @@
 use crate::{events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt};
 use actix_web::web;
-use battlemon_models::market::events::MarketEventKind;
-use battlemon_models::market::sale::SaleForRest;
+use battlemon_models::{
+    market::ask::AskForRest, market::bid::BidForRest, market::events::MarketEventKind,
+    market::sale::SaleForRest,
+};
 
 #[tracing::instrument(
     name = "Sending request to the rest service to store new market events to the database",
@@ -41,10 +43,22 @@ pub async fn build_market_request(
             let json: SaleForRest = sale.into();
             client.post(format!("{base_url}/sales")).json(&json)
         }
-        AddBid(bid) => client.post(format!("{base_url}/bids")).json(&bid),
-        AddAsk(ask) => client.post(format!("{base_url}/asks")).json(&ask),
-        RemoveBid(bid) => client.delete(format!("{base_url}/bids")).json(&bid),
-        RemoveAsk(ask) => client.delete(format!("{base_url}/asks")).json(&ask),
+        AddBid(bid) => {
+            let json: BidForRest = bid.into();
+            client.post(format!("{base_url}/bids")).json(&json)
+        }
+        AddAsk(ask) => {
+            let json: AskForRest = ask.into();
+            client.post(format!("{base_url}/asks")).json(&json)
+        }
+        RemoveBid(bid) => {
+            let json: BidForRest = bid.into();
+            client.delete(format!("{base_url}/bids")).json(&json)
+        }
+        RemoveAsk(ask) => {
+            let json: AskForRest = ask.into();
+            client.delete(format!("{base_url}/asks")).json(&json)
+        }
     };
 
     let ret = request_builder

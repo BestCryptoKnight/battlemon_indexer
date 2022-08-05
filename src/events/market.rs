@@ -47,13 +47,13 @@ pub async fn build_market_request(
             let json: BidForRest = bid.into();
             client.post(format!("{base_url}/bids")).json(&json)
         }
-        AddAsk(ask) => {
-            let json: AskForRest = ask.into();
-            client.post(format!("{base_url}/asks")).json(&json)
-        }
         RemoveBid(bid) => {
             let json: BidForRest = bid.into();
             client.delete(format!("{base_url}/bids")).json(&json)
+        }
+        AddAsk(ask) => {
+            let json: AskForRest = ask.into();
+            client.post(format!("{base_url}/asks")).json(&json)
         }
         RemoveAsk(ask) => {
             let json: AskForRest = ask.into();

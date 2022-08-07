@@ -11,34 +11,9 @@ use std::str::FromStr;
 
 #[derive(serde::Deserialize)]
 pub struct AppConfig {
-    pub contracts: ContractConfig,
+    pub contracts: battlemon_models::config::ContractConfig,
     pub rest: RestConfig,
     pub near_lake: NearLakeConfig,
-}
-
-#[derive(serde::Deserialize)]
-pub struct ContractConfig {
-    top_contract_id: AccountId,
-    nft_contract_id: AccountId,
-    market_contract_id: AccountId,
-}
-
-impl ContractConfig {
-    pub fn ids(&self) -> (&AccountId, &AccountId, &AccountId) {
-        (
-            &self.top_contract_id,
-            &self.nft_contract_id,
-            &self.market_contract_id,
-        )
-    }
-
-    pub fn nft_id(&self) -> &AccountId {
-        &self.nft_contract_id
-    }
-
-    pub fn market_id(&self) -> &AccountId {
-        &self.market_contract_id
-    }
 }
 
 #[derive(serde::Deserialize, Clone)]

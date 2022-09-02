@@ -20,7 +20,7 @@ pub fn deserialize_outcome_result_into_token(
             let bytes = base64::decode(v)?;
             serde_json::from_slice::<TokenExt>(bytes.as_slice())?
         }
-        _ => unreachable!(),
+        _ => return Err(anyhow!("Outcome result is not success value")),
     };
 
     Ok(token)
@@ -97,8 +97,17 @@ pub async fn handle_nft_events(
 ) -> anyhow::Result<()> {
     for event in events {
         let outcome_result = &outcome.execution_outcome.outcome.status;
-        let request = build_nft_request(event.event, outcome_result, client.clone()).await?;
-        let response = request.send().await?;
+        let request = build_nft_request(event.event, outcome_result, client.clone()).await;
+
+        if request.is_err() {
+            tracing::error!(
+                "Failed to build request for saving nft event: {:?}",
+                request
+            );
+            continue;
+        }
+
+        let response = request?.send().await?;
         events::handle_request_error(response).await?;
         tracing::info!("Successfully stored nft event");
     }

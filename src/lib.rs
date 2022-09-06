@@ -26,7 +26,7 @@ async fn handle_message(
     streamer_message: StreamerMessage,
     client: web::Data<reqwest::Client>,
 ) -> anyhow::Result<()> {
-    let nft_events = async {
+    let events = async {
         for shard in &streamer_message.shards {
             collect_and_store_contracts_events(
                 shard,
@@ -39,7 +39,7 @@ async fn handle_message(
         Ok::<(), anyhow::Error>(())
     };
 
-    try_join!(nft_events)?;
+    try_join!(events)?;
 
     Ok(())
 }

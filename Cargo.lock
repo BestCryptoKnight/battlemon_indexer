@@ -297,27 +297,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
 
 [[package]]
-name = "async-stream"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dad5c83079eae9969be7fadefe640a1c566901f05ff91ab221de4b6f68d9507e"
-dependencies = [
- "async-stream-impl",
- "futures-core",
-]
-
-[[package]]
-name = "async-stream-impl"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10f203db73a71dfa2fb6dd22763990fa26f3d2625a6da2da900d23b87d26be27"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1989,12 +1968,11 @@ dependencies = [
 
 [[package]]
 name = "near-lake-framework"
-version = "0.5.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e64c96682214091519e78f991cb17c1991f0c1b32d2f9bd9977fe71ede4e6e5"
+checksum = "a0316ee594f99e37604a0ec839e0130519e8e42110cfe4049d64d8f4b021c49e"
 dependencies = [
  "anyhow",
- "async-stream",
  "aws-config",
  "aws-sdk-s3",
  "aws-types",

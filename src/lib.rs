@@ -8,8 +8,6 @@ use near_lake_framework::near_indexer_primitives::{
     views::ExecutionStatusView, IndexerExecutionOutcomeWithReceipt, IndexerShard, StreamerMessage,
 };
 
-use token_metadata_ext::TokenMetadata;
-
 pub mod config;
 pub mod consts;
 pub mod events;

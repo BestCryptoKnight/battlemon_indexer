@@ -1,12 +1,10 @@
 use crate::models::NftEvent;
 use crate::{
     events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt, NftEventKind,
-    TokenMetadata,
 };
 use actix_web::web;
 use anyhow::{anyhow, Context};
-use serde_json::json;
-use token_metadata_ext::TokenExt;
+use battlemon_models::nft::{NftTokenForRest, TokenExt};
 
 #[tracing::instrument(
     name = "Deserialize outcome result into nft model",
@@ -41,44 +39,17 @@ pub async fn build_nft_request(
     //  - implement conversion from contracts models to them
     match event {
         NftEventKind::NftMint => {
-            let TokenExt {
-                token_id,
-                owner_id,
-                metadata,
-                model,
-                ..
-            } = deserialize_outcome_result_into_token(outcome_result)
-                .context("Failed to deserialize nft token")?;
-
-            let TokenMetadata {
-                title,
-                description,
-                media,
-                copies,
-                issued_at,
-                expires_at,
-                ..
-            } = metadata.unwrap();
-
-            let nft_token = json!({
-                "owner_id": owner_id,
-                "token_id": token_id,
-                "title": title,
-                "description": description,
-                "media": media,
-                "media_hash": null,
-                "copies": copies,
-                "issued_at": issued_at,
-                "expires_at": expires_at,
-                "model": model,
-            });
+            let token: NftTokenForRest = deserialize_outcome_result_into_token(outcome_result)
+                .context("Failed to deserialize nft token")?
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("Failed to convert TokenExt to NftTokenForRest"))?;
 
             let base_url = config.rest.base_url();
             let request = client
                 .post(format!("{base_url}/nft_tokens"))
                 .header("Content-Type", "application/json")
                 .basic_auth(config.rest.username(), Some(config.rest.password()))
-                .json(&nft_token);
+                .json(&token);
 
             Ok(request)
         }

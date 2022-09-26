@@ -1,5 +1,4 @@
 use self::config::get_config;
-use crate::models::NftEventKind;
 use actix_web::web;
 use consts::EVENT_PREFIX;
 use events::{market, nft};

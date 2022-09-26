@@ -1,10 +1,7 @@
-use crate::models::NftEvent;
-use crate::{
-    events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt, NftEventKind,
-};
+use crate::{events, get_config, ExecutionStatusView, IndexerExecutionOutcomeWithReceipt};
 use actix_web::web;
 use anyhow::{anyhow, Context};
-use battlemon_models::nft::{NftTokenForRest, TokenExt};
+use battlemon_models::nft::{NftEvent, NftEventKind, NftTokenForRest, TokenExt};
 
 #[tracing::instrument(
     name = "Deserialize outcome result into nft model",
@@ -34,9 +31,7 @@ pub async fn build_nft_request(
     client: web::Data<reqwest::Client>,
 ) -> anyhow::Result<reqwest::RequestBuilder> {
     let config = get_config().await;
-    // todo:
-    //  - extract from rest and indexer models for db and json to separate crate.
-    //  - implement conversion from contracts models to them
+    let base_url = config.rest.base_url();
     match event {
         NftEventKind::NftMint => {
             let token: NftTokenForRest = deserialize_outcome_result_into_token(outcome_result)
@@ -44,11 +39,24 @@ pub async fn build_nft_request(
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("Failed to convert TokenExt to NftTokenForRest"))?;
 
-            let base_url = config.rest.base_url();
             let request = client
                 .post(format!("{base_url}/nft_tokens"))
                 .header("Content-Type", "application/json")
                 .basic_auth(config.rest.username(), Some(config.rest.password()))
+                .json(&token);
+
+            Ok(request)
+        }
+        NftEventKind::AssembleNft | NftEventKind::DisassembleNft => {
+            let token: NftTokenForRest = deserialize_outcome_result_into_token(outcome_result)
+                .context("Failed to deserialize nft token")?
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("Failed to convert TokenExt to NftTokenForRest"))?;
+
+            let request = client
+                .patch(format!("{base_url}/nft_tokens"))
+                .basic_auth(config.rest.username(), Some(config.rest.password()))
+                .header("Content-Type", "application/json")
                 .json(&token);
 
             Ok(request)
@@ -79,8 +87,7 @@ pub async fn handle_nft_events(
         }
 
         let response = request?.send().await?;
-        events::handle_request_error(response).await?;
-        tracing::info!("Successfully stored nft event");
+        events::handle_response_for_error(response).await?;
     }
     Ok(())
 }

@@ -8,7 +8,7 @@ pub mod market;
 pub mod nft;
 
 #[tracing::instrument(name = "Handle request error", skip(response))]
-pub async fn handle_request_error(response: Response) -> anyhow::Result<()> {
+pub async fn handle_response_for_error(response: Response) -> anyhow::Result<()> {
     if !response.status().is_success() {
         let error_json = response
             .json::<Value>()
@@ -21,6 +21,8 @@ pub async fn handle_request_error(response: Response) -> anyhow::Result<()> {
             .unwrap();
 
         tracing::error!("Failed to store event. Error: {error_message}");
+    } else {
+        tracing::info!("Successfully stored nft event");
     }
 
     Ok(())

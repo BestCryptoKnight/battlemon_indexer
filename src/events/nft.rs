@@ -13,7 +13,7 @@ pub fn deserialize_outcome_result_into_token(
     let token = match outcome_result {
         ExecutionStatusView::SuccessValue(v) => {
             let bytes = base64::decode(v)?;
-            serde_json::from_slice::<TokenExt>(bytes.as_slice())?
+            serde_json::from_slice::<TokenExt>(&bytes)?
         }
         _ => return Err(anyhow!("Outcome result is not success value")),
     };
